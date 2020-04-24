@@ -56,16 +56,16 @@ Argument:
 """
 function displayGrid(t::Array{Int64, 2})
 
-    m = size(t, 1)
-    n=m-2
-    blockSize = round.(Int, sqrt(m))
+    n = size(t, 1)
+  
+    blockSize = round.(Int, sqrt(n))
     
     # Display the upper border of the grid
-    println("|", "-"^(3*m+blockSize-1),"|") 
+    println("|", "-"^(3*n+blockSize-1),"|") 
     
     # For each cell (l, c)
-    for l in 1:m
-        for c in 1:m
+    for l in 1:n
+        for c in 1:n
           if c==1
 		print("|")
           end
@@ -88,12 +88,12 @@ function displayGrid(t::Array{Int64, 2})
             	
         end
 	println("| ")
-	if l==1  || l== m-1 
-	    println("|", "-"^(3*m+blockSize-1),"|") 
+	if l==1  || l== n-1 
+	    println("|", "-"^(3*n+blockSize-1),"|") 
         end
 	
    end 
-   println("|", "-"^(3*m+blockSize-1),"|")
+   println("|", "-"^(3*n+blockSize-1),"|")
 end
 
 
