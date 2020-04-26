@@ -172,10 +172,19 @@ Generate all the instances
 Remark: a grid is generated only if the corresponding output file does not already exist
 """
 function generateDataSet()
+    # For each grid size considered
+     for size in [4, 5, 6, 7,8]
+     # For each grid density considered
+        for instance in 1:10
 
-    # TODO
-    println("In file generation.jl, in method generateDataSet(), TODO: generate an instance")
-    
+            fileName = "/Users/djennaedom/Documents/ENSTA/2A/RO203/Bloc 2/Projet_RO203/jeu1/data/instance_t" * string(size) * "_" * string(instance) * ".txt"
+
+            if !isfile(fileName)
+                println("-- Generating file " * fileName)
+                saveInstance(generateInstance(size), fileName)
+            end
+        end
+    end
 end
 
 
