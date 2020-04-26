@@ -209,6 +209,52 @@ function saveInstance(t::Array{Int64, 2}, outputFile::String)
     
 end 
 
+"""
+Write a solution in an output stream
+
+Arguments
+- fout: the output stream (usually an output file)
+- x: given by CplexSolve
+"""
+function writeSolution(fout::IOStream, x::Array{VariableRef,3})
+
+## TODO: ECRIRE LA FONCTION QUI PREND EN ARG LA SORTIE DU SOLVEUR, CREE LE T::ARRAY AVEC LES VALEURS DE LA GRILLE SOLUTION ET APPELLE LA FONCTION CI APRES
+
+end
+
+"""
+Write a solution in an output stream
+
+Arguments
+- fout: the output stream (usually an output file)
+- t: 2-dimensional array of size n*n
+"""
+function writeSolution(fout::IOStream, t::Array{Int64, 2})
+    
+    println(fout, "t = [")
+    n = size(t, 1)-2
+    
+    for l in 2:n+1
+
+        print(fout, "[ ")
+        
+        for c in 2:n+1
+            print(fout, string(t[l, c]) * " ")
+        end
+
+        endLine = "]"
+
+        if l != n+1
+            endLine *= ";"
+        end
+
+        println(fout, endLine)
+    end
+
+    println(fout, "]")
+end
+
+
 
 """
 
