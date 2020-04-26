@@ -133,13 +133,10 @@ function solveDataSet()
 
     # For each instance
     # (for each file in folder dataFolder which ends by ".txt")
-    for file in filter(x->occursin(".txt", x), readdir(dataFolder))  
+    for file in filter(x->occursin(".txt", x), readdir(dataFolder))
         
         println("-- Resolution of ", file)
-        readInputFile(dataFolder * file)
-
-        # TODO
-        println("In file resolution.jl, in method solveDataSet(), TODO: read value returned by readInputFile()")
+       t= readInputFile(dataFolder * file)
         
         # For each resolution method
         for methodId in 1:size(resolutionMethod, 1)
@@ -149,7 +146,7 @@ function solveDataSet()
             # If the instance has not already been solved by this method
             if !isfile(outputFile)
                 
-                fout = open(outputFile, "w")  
+                fout = open(outputFile, "w")
 
                 resolutionTime = -1
                 isOptimal = false
@@ -157,16 +154,15 @@ function solveDataSet()
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
                     
-                    # TODO 
-                    println("In file resolution.jl, in method solveDataSet(), TODO: fix cplexSolve() arguments and returned values")
-                    
                     # Solve it and get the results
-                    isOptimal, resolutionTime = cplexSolve()
+                    isOptimal=cplexSolve(t)[1]
+                    x=cplexSolve(t)[2]
+                    resolutionTime = cplexSolve(t)[3]
                     
                     # If a solution is found, write it
                     if isOptimal
                         # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write cplex solution in fout") 
+                       writeSolution(fout,x)
                     end
 
                 # If the method is one of the heuristics
@@ -174,13 +170,13 @@ function solveDataSet()
                     
                     isSolved = false
 
-                    # Start a chronometer 
+                    # Start a chronometer
                     startingTime = time()
                     
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
                         
-                        # TODO 
+                        # TODO
                         println("In file resolution.jl, in method solveDataSet(), TODO: fix heuristicSolve() arguments and returned values")
                         
                         # Solve it and get the results
@@ -197,14 +193,14 @@ function solveDataSet()
                         # TODO
                         println("In file resolution.jl, in method solveDataSet(), TODO: write the heuristic solution in fout")
                         
-                    end 
+                    end
                 end
 
-                println(fout, "solveTime = ", resolutionTime) 
+                println(fout, "solveTime = ", resolutionTime)
                 println(fout, "isOptimal = ", isOptimal)
                 
                 # TODO
-                println("In file resolution.jl, in method solveDataSet(), TODO: write the solution in fout") 
+                println("In file resolution.jl, in method solveDataSet(), TODO: write the solution in fout")
                 close(fout)
             end
 
@@ -213,6 +209,6 @@ function solveDataSet()
             include(outputFile)
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
-        end         
-    end 
+        end
+    end
 end
