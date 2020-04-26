@@ -171,6 +171,44 @@ function displaySolution(x::Array{VariableRef,2})
     end
 end
 
+"""
+Save a grid in a text file
+
+Argument
+- t: 2-dimensional array of size n*n
+- outputFile: path of the output file
+"""
+
+function saveInstance(t::Array{Int64, 2}, outputFile::String)
+
+    n = size(t, 1)
+
+    # Open the output file
+    writer = open(outputFile, "w")
+
+    # For each cell (l, c) of the grid
+    for l in 1:n
+        for c in 1:n
+
+            # Write its value
+            if t[l, c] == 0
+                print(writer, " ")
+            else
+                print(writer, t[l, c])
+            end
+
+            if c != n
+                print(writer, ",")
+            else
+                println(writer, "")
+            end
+        end
+    end
+
+    close(writer)
+    
+end 
+
 
 """
 
