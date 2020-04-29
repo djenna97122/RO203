@@ -1,16 +1,14 @@
 # This file contains methods to solve a bridges grid (heuristically or with CPLEX)
 using CPLEX
 
-include("generation.jl")
+include("generation_jeu2.jl")
 
 TOL = 0.00001
 
 """
 Solve an instance with CPLEX
-
 Argument
 -t:  array of size n*n with values in [0, n] (0 if the cell is empty)
-
 Return
 - status: :Optimal if the problem is solved optimally
 - edges: 4-dimensional variables array such that edges[i, j, k,l] =number of bridges between (i,j) and (k,l)
@@ -64,7 +62,7 @@ function cplexSolve(t::Array{Any, 2})
         end
     end
     
-
+"""
     # Bridges dont cross
     
     for i in 1:n
@@ -74,13 +72,13 @@ function cplexSolve(t::Array{Any, 2})
                     for l1 in 1:i
                         for l2 in i:n
                             @constraint(m,edges[l1,j,l2,j]==0  edges[i,c1,i,c2])
-                            
                         end
                     end
                 end
             end
         end
     end
+    """
 
     # Start a chronometer
     start = time()
@@ -108,9 +106,7 @@ end
 
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
-
 The results are written in "../res/cplex" and "../res/heuristic"
-
 Remark: If an instance has previously been solved (either by cplex or the heuristic) it will not be solved again
 """
 function solveDataSet()
