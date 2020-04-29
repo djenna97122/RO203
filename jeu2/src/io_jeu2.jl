@@ -44,9 +44,11 @@ function readInputFile(inputFile::String)
            return t
 
 end
+
 """
 Display a grid represented by a 2-dimensional array
-Argument:
+
+- Argument:
 - t: array of size m*m with values in [0, n] (0 if the cell is empty)
 """
 
@@ -85,7 +87,7 @@ Argument:
 - t: array of size m*m with values in [0, n] representing initial grid
 - edges:
 """
-function writeSolution(edges::Array{VariableRef,4},t::Array{Any,2})
+function displayIntermediate(edges::Array{VariableRef,4},t::Array{Any,2})
 
     n = size(edges,1)
     x=t
@@ -123,7 +125,7 @@ function writeSolution(edges::Array{VariableRef,4},t::Array{Any,2})
                               k=i+1
                               while k<l
                                   if (JuMP.value(edges[l,c,i,j])==1  && x[k,j]==0)
-                                      x[k,j]=|
+                                      x[k,j]="|"
                                   elseif (JuMP.value(edges[l,c,i,j])==2 && x[k,j]==0)
                                           x[k,j]="||"
                                   end
@@ -133,7 +135,7 @@ function writeSolution(edges::Array{VariableRef,4},t::Array{Any,2})
                               k=l+1
                               while k<i
                                  if (JuMP.value(edges[l,c,i,j])==1  && x[i,k]==0)
-                                      x[k,j]=|
+                                      x[k,j]="|"
                                   elseif (JuMP.value(edges[l,c,i,j])==2 && x[i,k]==0)
                                           x[k,j]="||"
                                   end
@@ -151,15 +153,14 @@ end
 """
 Display cplex solution
 Argument
-- t: array of size m*m with values in [0, n] representing initial grid
-edges
-Return
-- x: 2-dimensional variables array containing numbers for islands and "-","=","||","|" for bridges
+- t: initial grid
+
+- Print the Solution grid
 """
 function displaySolution(edges::Array{VariableRef,4},t::Array{Any,2})
 
     n = size(t,1)
-    x=writeSolution(edges,t)
+    x=displayIntermediate(edges,t)
     # For each cell (l, c)
     for l in 1:n
         for c in 1:n
@@ -174,6 +175,40 @@ function displaySolution(edges::Array{VariableRef,4},t::Array{Any,2})
         println(" ")
     end
 end
+"""
+Write a solution in an output stream
+
+Arguments
+- fout: the output stream (usually an output file)
+t: 2-dimensional variables array containing numbers for islands and "-","=","||","|" for bridges
+edges
+"""
+function writeSolution(file::String,t::Array{Any, 2})
+   
+    open(file, "w") do fout
+        n = size(t, 1)
+        
+        for l in 1:n
+
+             for c in 1:n
+                    if t[l,c]==0
+                        write(fout,"  ")
+                    elseif t[l,c]== "||"
+                        write(fout,string(t[l,c]))
+                    else
+                        write(fout,string(t[l,c]) *" ")
+                    end
+             end
+                write(fout," ")
+                if l != n
+                    
+                end
+            write(fout,  "\n")
+        end
+    end
+end
+    
+
 
 """
 Create a pdf file which contains a performance diagram associated to the results of the ../res folder
@@ -251,11 +286,11 @@ function performanceDiagram(outputFile::String)
 
                     if solveTime > maxSolveTime
                         maxSolveTime = solveTime
-                    end 
-                end 
-            end 
+                    end
+                end
+            end
         end
-    end 
+    end
 
     # Sort each row increasingly
     results = sort(results, dims=2)
@@ -278,7 +313,7 @@ function performanceDiagram(outputFile::String)
         # Current position in the line
         currentId = 1
 
-        # While the end of the line is not reached 
+        # While the end of the line is not reached
         while currentId != size(results, 2) && results[dim, currentId] != Inf
 
             # Number of elements which have the value previousX
@@ -313,13 +348,13 @@ function performanceDiagram(outputFile::String)
             # Draw a new plot
             plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
 
-        # Otherwise 
+        # Otherwise
         else
             # Add the new curve to the created plot
             savefig(plot!(x, y, label = folderName[dim], linewidth=3), outputFile)
-        end 
+        end
     end
-end 
+end
 
 """
 Create a latex file which contains an array with the results of the ../res folder.
@@ -351,7 +386,7 @@ function resultsArray(outputFile::String)
     println(fout, raw"""\documentclass{article}
 
 \usepackage[french]{babel}
-\usepackage [utf8] {inputenc} % utf-8 / latin1 
+\usepackage [utf8] {inputenc} % utf-8 / latin1
 \usepackage{multicol}
 
 \setlength{\hoffset}{-18pt}
@@ -371,7 +406,7 @@ function resultsArray(outputFile::String)
 
     header = raw"""
 \begin{center}
-\renewcommand{\arraystretch}{1.4} 
+\renewcommand{\arraystretch}{1.4}
  \begin{tabular}{l"""
 
     # Name of the subfolder of the result folder (i.e, the resolution methods used)
@@ -397,7 +432,7 @@ function resultsArray(outputFile::String)
             # Add all its files in the solvedInstances array
             for file2 in filter(x->occursin(".txt", x), readdir(path))
                 solvedInstances = vcat(solvedInstances, file2)
-            end 
+            end
 
             if maxSize < folderSize
                 maxSize = folderSize
@@ -446,7 +481,7 @@ function resultsArray(outputFile::String)
         if rem(id, maxInstancePerPage) == 0
             println(fout, footer, "\\newpage")
             println(fout, header)
-        end 
+        end
 
         # Replace the potential underscores '_' in file names
         print(fout, replace(solvedInstance, "_" => "\\_"))
@@ -465,7 +500,7 @@ function resultsArray(outputFile::String)
 
                 if isOptimal
                     println(fout, "\$\\times\$")
-                end 
+                end
                 
             # If the instance has not been solved by this method
             else
@@ -485,4 +520,5 @@ function resultsArray(outputFile::String)
 
     close(fout)
     
-end 
+end
+
