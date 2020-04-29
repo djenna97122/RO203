@@ -111,8 +111,10 @@ Remark: If an instance has previously been solved (either by cplex or the heuris
 """
 function solveDataSet()
 
-    dataFolder = "../data/"
-    resFolder = "../res/"
+
+     dataFolder ="/Users/djennaedom/Documents/ENSTA/2A/RO203/Bloc 2/Projet_RO203/jeu2/data/"
+     resFolder = "/Users/djennaedom/Documents/ENSTA/2A/RO203/Bloc 2/Projet_RO203/jeu2/res/"
+
 
     # Array which contains the name of the resolution methods
     resolutionMethod = ["cplex"]
@@ -136,10 +138,7 @@ function solveDataSet()
     for file in filter(x->occursin(".txt", x), readdir(dataFolder))
         
         println("-- Resolution of ", file)
-        readInputFile(dataFolder * file)
-
-        # TODO
-        println("In file resolution.jl, in method solveDataSet(), TODO: read value returned by readInputFile()")
+        t=readInputFile(dataFolder * file)
         
         # For each resolution method
         for methodId in 1:size(resolutionMethod, 1)
@@ -148,8 +147,7 @@ function solveDataSet()
 
             # If the instance has not already been solved by this method
             if !isfile(outputFile)
-                
-                fout = open(outputFile, "w")
+
 
                 resolutionTime = -1
                 isOptimal = false
@@ -157,16 +155,11 @@ function solveDataSet()
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
                     
-                    # TODO
-                    println("In file resolution.jl, in method solveDataSet(), TODO: fix cplexSolve() arguments and returned values")
-                    
-                    # Solve it and get the results
-                    isOptimal, resolutionTime = cplexSolve()
+                  isOptimal, edges, resolutionTime = cplexSolve(t)
                     
                     # If a solution is found, write it
                     if isOptimal
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write cplex solution in fout")
+                        writeSolution(outputFile,displayIntermediate(edges,t))
                     end
 
                 # If the method is one of the heuristics
@@ -199,21 +192,21 @@ function solveDataSet()
                         
                     end
                 end
-
+                fout = open(outputFile, "a")
                 println(fout, "solveTime = ", resolutionTime)
                 println(fout, "isOptimal = ", isOptimal)
-                
-                # TODO
-                println("In file resolution.jl, in method solveDataSet(), TODO: write the solution in fout")
                 close(fout)
+                
+               
             end
-
-
+            """
             # Display the results obtained with the method on the current instance
             include(outputFile)
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
+            """
         end
     end
 end
+
 
