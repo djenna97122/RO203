@@ -203,8 +203,9 @@ function writeSolution(file::String,t::Array{Any, 2})
                 if l != n
                     
                 end
-            write(fout,  "\n")
+            write(fout, "\n ")
         end
+        write(fout,"\n")
     end
 end
     
@@ -521,4 +522,5 @@ function resultsArray(outputFile::String)
     close(fout)
     
 end
+
 
