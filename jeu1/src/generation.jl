@@ -26,7 +26,7 @@ function generateInstance(n::Int64)
         i = 1
 
         # While the grid is valid and the required number of cells is not filled
-        while isGridValid && i < (n*n)
+        while isGridValid && i <= (n*n)
 
             # Randomly select a cell and a value
             l = ceil.(Int, n * rand())
@@ -96,10 +96,12 @@ function generateInstance(n::Int64)
         c[i+1, 1] = 1
         j=1
         m=t[i,j]
-        while j<n && t[i, j+1] > m 
-            c[i+1, 1] += 1
+        while j<n 
+            if t[i, j+1] > m 
+                c[i+1, 1] += 1
+                m = t[i, j+1]
+            end
             j += 1
-            m = t[i, j]
         end
     end
     # tours visibles bas
@@ -107,10 +109,12 @@ function generateInstance(n::Int64)
         c[n+2, j+1] = 1
         i=n
         m=t[i,j]
-        while i>1 && t[i-1, j] > m
-            c[n+2, j+1] += 1
+        while i>1  
+            if t[i-1, j] > m
+                c[n+2, j+1] += 1
+                m = t[i-1, j]
+            end
             i -= 1
-            m = t[i, j]
         end
     end
     # tours visibles droite
@@ -118,10 +122,12 @@ function generateInstance(n::Int64)
         c[i+1, n+2] = 1
         j=n
         m=t[i,j]
-        while j>1 && t[i, j-1] > m
-            c[i+1, n+2] += 1
+        while j>1 
+            if t[i, j-1] > m
+                c[i+1, n+2] += 1
+                m = t[i, j-1]
+            end
             j -= 1
-            m = t[i, j]
         end
     end
     # tours visibles haut
@@ -129,13 +135,15 @@ function generateInstance(n::Int64)
         c[1, j+1] = 1
         i=1
         m=t[i,j]
-        while i<n && t[i+1, j] > m
-            c[1, j+1] += 1
-            i += 1
-            m = t[i, j]
+        while i<n 
+            if t[i+1, j] > m
+                c[1, j+1] += 1
+                m = t[i+1, j]
+            end
+            i += 1            
         end
     end
-    return c 
+    return c, t 
 end
 
 
@@ -189,7 +197,7 @@ function generateDataSet()
     # For each grid size considered
     for size in [4, 5, 6, 7, 8]
         # Generate 10 instances
-        for instance in 1:10 
+        for instance in 1:2
 
             fileName = "../data/instance_t" * string(size) * "_" * string(instance) * ".txt"
 
