@@ -69,12 +69,219 @@ end
 """
 Heuristically solve an instance
 """
-function heuristicSolve()
+function heuristicSolve(t::Array{Int, 2}, checkFeasibility::Bool)
 
-    # TODO
-    println("In file resolution.jl, in method heuristicSolve(), TODO: fix input and output, define the model")
-    
+    n = size(t, 1)-2
+    tCopy = []
+    tCopy = zeros(Int64, n, n)
+
+    # True if the grid has completely been filled
+    gridFilled = false
+
+    # True if the grid may still have a solution
+    gridStillFeasible = true
+
+    # While the grid is not filled and it may still be solvable
+    while !gridFilled && gridStillFeasible
+
+        # Coordinates of the most constrained cell
+        mcCell = [-1 -1]
+
+        # Values which can be assigned to the most constrained cell
+        values = nothing
+        
+        # Randomly select a cell and a value
+        l = ceil.(Int, n * rand())
+        c = ceil.(Int, n * rand())
+        id = 1
+
+        # For each cell of the grid, while a cell with 0 values has not been found
+        while id <= n*n && (values == nothing || size(values, 1)  != 0)
+
+            # If the cell does not have a value
+            if tCopy[l, c] == 0
+
+                # Get the values which can be assigned to the cell
+                cValues = possibleValues2(t, tCopy, l, c)
+
+                # If it is the first cell or if it is the most constrained cell currently found
+                if values == nothing || size(cValues, 1) < size(values, 1)
+
+                    values = cValues
+                    mcCell = [l c]
+                end 
+            end
+            
+            # Go to the next cell                    
+            if c < n
+                c += 1
+            else
+                if l < n
+                    l += 1
+                    c = 1
+                else
+                    l = 1
+                    c = 1
+                end
+            end
+
+            id += 1
+        end
+
+        # If all the cell have a value
+        if values == nothing
+
+            gridFilled = true
+            gridStillFeasible = true
+        else
+
+            # If a cell cannot be assigned any value
+            if size(values, 1) == 0
+                gridStillFeasible = false
+
+                # Else assign a random value to the most constrained cell 
+            else
+                
+                newValue = ceil.(Int, rand() * size(values, 1))
+                if checkFeasibility
+                    
+                    gridStillFeasible = false
+                    id = 1
+                    while !gridStillFeasible && id <= size(values, 1)
+
+                        tCopy[mcCell[1], mcCell[2]] = values[rem(newValue, size(values, 1)) + 1]
+                        
+                        if isGridFeasible(tCopy)
+                            gridStillFeasible = true
+                        else
+                            newValue += 1
+                        end
+
+                        id += 1
+                        
+                    end
+                else 
+                    tCopy[mcCell[1], mcCell[2]] = values[newValue]
+                end 
+            end 
+        end  
+    end  
+
+    return gridStillFeasible, tCopy
+
 end 
+
+"""
+Number of values which could currently be assigned to a cell
+
+Arguments
+- t: array of size n*n with values in [0, n] (0 if the cell is empty)
+- l, c: row and column of the cell
+
+Return
+- values: array of integers which do not appear on line l, column c 
+"""
+function possibleValues(t::Array{Int, 2}, l::Int64, c::Int64)
+
+    values = Array{Int64, 1}()
+
+    for v in 1:size(t, 1)
+        if isValid(t, l, c, v)
+            values = append!(values, v)
+        end 
+    end 
+
+    return values
+    
+end
+
+function possibleValues2(d::Array{Int, 2}, t::Array{Int, 2}, l::Int64, c::Int64)
+
+    values = Array{Int64, 1}()
+    n = size(t, 1)
+    m=(n+1)
+
+    # tours visibles gauche
+    mg = t[l, 1] # tour la plus haute sur la ligne a gauche
+    vg = 1 # nb tours visibles avant [l, c] sur la ligne a gauche
+    if c != 1
+        for j in 2:(c-1) 
+            if t[l, j] > mg
+                mg = t[l, j]
+                vg += 1
+            end
+        end
+    elseif d[l+1, 1] == 1
+        values = [n]
+        return values
+    end
+    if d[l+1, 1] == vg
+        m = mg # la tour ne doit pas etre visible a gauche
+    end
+    # tours visibles bas
+    mb = t[n, c] # tour la plus haute sur la colonne bas
+    vb = 1 # nb tours visibles avant [l, c] sur la colonne bas
+    if l != n
+        for i in (l+1):n 
+            if t[n+l+1-i, c] > mb
+                mb = t[i, c]
+            end
+        end
+    elseif d[n+2, c+1] == 1
+        values = [n]
+        return values
+    end
+    if d[n+2, c+1] == vb
+        if mb < m
+            m = mb # la tour ne doit pas etre visible en bas
+        end
+    end
+    # tours visibles droite
+    md = t[l, n] # tour la plus haute sur la ligne a droite
+    vd = 1 # nb tours visibles avant [l, c] sur la ligne a droite
+    if c != n
+        for j in (c+1):n
+            if t[l, n+c+1-j] > md
+                md = t[l, j]
+            end
+        end
+    elseif d[l+1, n+2] == 1
+        values = [n]
+        return values
+    end
+    if d[l+1, n+2] == vd
+        if md < m
+            m = md # la tour ne doit pas etre visible a droite
+        end
+    end
+    # tours visibles haut
+    mh = t[1, c] # tour la plus haute sur la colonne en haut
+    vh = 1 # nb tours visibles avant [l, c] sur la colonne en haut
+    if l != 1
+        for i in 2:(l-1) 
+            if t[i, c] > mh
+                mh = t[i, c]
+            end
+        end
+    elseif d[1, c+1] == 1
+        values = [n]
+        return values
+    end
+    if d[1, c+1] == vh
+        if mh < m
+            m = mh # la tour ne doit pas etre visible en haut
+        end 
+    end
+    
+    for v in 1:n
+        if isValid(t, l, c, v) && v<m
+            values = append!(values, v)
+        end 
+    end 
+
+    return values
+    
+end
 
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
@@ -110,11 +317,8 @@ function solveDataSet()
     for file in filter(x->occursin(".txt", x), readdir(dataFolder))  
         
         println("-- Resolution of ", file)
-        readInputFile(dataFolder * file)
+        t = readInputFile(dataFolder * file)
 
-        # TODO
-        println("In file resolution.jl, in method solveDataSet(), TODO: read value returned by readInputFile()")
-        
         # For each resolution method
         for methodId in 1:size(resolutionMethod, 1)
             
@@ -131,16 +335,12 @@ function solveDataSet()
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
                     
-                    # TODO 
-                    println("In file resolution.jl, in method solveDataSet(), TODO: fix cplexSolve() arguments and returned values")
-                    
                     # Solve it and get the results
-                    isOptimal, resolutionTime = cplexSolve()
+                    isOptimal, x, resolutionTime = cplexSolve(t)
                     
                     # If a solution is found, write it
                     if isOptimal
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write cplex solution in fout") 
+                        writeSolution(fout, x)
                     end
 
                 # If the method is one of the heuristics
@@ -176,9 +376,6 @@ function solveDataSet()
 
                 println(fout, "solveTime = ", resolutionTime) 
                 println(fout, "isOptimal = ", isOptimal)
-                
-                # TODO
-                println("In file resolution.jl, in method solveDataSet(), TODO: write the solution in fout") 
                 close(fout)
             end
 

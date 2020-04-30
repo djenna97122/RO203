@@ -98,46 +98,9 @@ end
 Display cplex solution
 
 Argument
-- x: 3-dimensional variables array such that x[i, j, k] = 1 if cell (i, j) has value k
+- x: 3-dimensional variables array such that x[i, j, k, l] = 1 if cell (i, j) has value k
 """
-function displayIntermediate(x::Array{VariableRef,3})
-
-    n = size(x, 1)
-    
-    blockSize = round.(Int, sqrt(n))
-
-    # Display the upper border of the grid
-    println(" ", "-"^(3*(3*n+blockSize)-2)) 
-
-    # For each cell (l, c)
-    for l in 1:n
-        for c in 1:n
-
-            if c == 1
-                print("| ")
-            end  
-
-            print(Int64(JuMP.value(x[l, c,1])))  
-            print(" ")
-            print(Int64(JuMP.value(x[l, c,2])))  
-            print(" ")
-            print(Int64(JuMP.value(x[l, c,3])))  
-            print(" ")
-            print(Int64(JuMP.value(x[l, c,4])))  
-            print(" | ")
-        end
-        println(" ")
-        println(" ", "-"^(3*(3*n+blockSize)-2))
-    end
-end
-
-"""
-Display cplex solution
-
-Argument
-- x: 3-dimensional variables array such that x[i, j, k] = 1 if cell (i, j) has value k
-"""
-function displaySolution(x::Array{VariableRef,2})
+function displaySolution(x::Array{VariableRef,4})
 
     n = size(x, 1)
     
@@ -145,30 +108,36 @@ function displaySolution(x::Array{VariableRef,2})
 
     # Display the upper border of the grid
     println(" ", "-"^(3*n+blockSize-2)) 
-
+    
     # For each cell (l, c)
     for l in 1:n
         for c in 1:n
+          if c==1
+            print("|")
+          end
+        
+          t = Int64(1)
+          for i in  1:n
+            if JuMP.value(x[l, c, l, i]) > 0.5
+                t = t + 1
+            end
+          end
 
-            if c == 1
-                print("|")
-            end  
-
-            if JuMP.value(x[l, c]) > TOL
-                if JuMP.value(x[l, c]) < 10
-                    print(" ")
-                end 
-                print(Int64(JuMP.value(x[l, c])))
+          if t == 0
+            print(" -")
+          else
+            if t < 10
+                print(" ")
             end
             
-            print(" ")
+            print(t)
+          end
+          print(" ")
+            	
         end
-        println("|")
-
-        if l == n
-            println(" ", "-"^(3*n+blockSize-2))
-        end 
-    end
+        println("| ")
+	end 
+   println(" ", "-"^(3*n+blockSize-2)," ")         
 end
 
 """
@@ -209,18 +178,6 @@ function saveInstance(t::Array{Int64, 2}, outputFile::String)
     
 end 
 
-"""
-Write a solution in an output stream
-
-Arguments
-- fout: the output stream (usually an output file)
-- x: given by CplexSolve
-"""
-function writeSolution(fout::IOStream, x::Array{VariableRef,3})
-
-## TODO: ECRIRE LA FONCTION QUI PREND EN ARG LA SORTIE DU SOLVEUR, CREE LE T::ARRAY AVEC LES VALEURS DE LA GRILLE SOLUTION ET APPELLE LA FONCTION CI APRES
-
-end
 
 """
 Write a solution in an output stream
@@ -229,22 +186,28 @@ Arguments
 - fout: the output stream (usually an output file)
 - t: 2-dimensional array of size n*n
 """
-function writeSolution(fout::IOStream, t::Array{Int64, 2})
+function writeSolution(fout::IOStream, t::Array{VariableRef, 4})
     
     println(fout, "t = [")
-    n = size(t, 1)-2
+    n = size(t, 1)
     
-    for l in 2:n+1
+    for l in 1:n
 
         print(fout, "[ ")
         
-        for c in 2:n+1
-            print(fout, string(t[l, c]) * " ")
+        for c in 1:n
+            x = Int64(1)
+            for i in  1:n
+                if JuMP.value(t[l, c, l, i]) > 0.5
+                    x = x + 1
+                end
+            end
+            print(fout, string(x) * " ")
         end
 
         endLine = "]"
 
-        if l != n+1
+        if l != n
             endLine *= ";"
         end
 
@@ -253,7 +216,6 @@ function writeSolution(fout::IOStream, t::Array{Int64, 2})
 
     println(fout, "]")
 end
-
 
 
 """
