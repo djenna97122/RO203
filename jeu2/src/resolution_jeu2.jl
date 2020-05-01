@@ -201,9 +201,10 @@ function heuristicSolve(t)
                     neighbours=ComputeNeighbours(i,j,t,islands,new_index)
                     println(islands[c][4]>0 )
                     println(neighbours==[])
+                  
                 end
-                #If an island still lacks connection and doesn't have enough neighbours available left
-                if (neighbours==[] && islands[i*(n-1)+j][4]>0)
+                #If an island still lacks connection and doesn't have enough neighbours available
+                if (neighbours==[] && islands[c][4]>0)
                     println("pas assez de voisins dispo")
                     gridStillFeasible = false
                 end
@@ -244,7 +245,7 @@ function ComputeNeighbours(i,j,t,islands,new_index)
    l_up=i
    l_down=i
    c_left=j
-   c_right=i
+   c_right=j
    n=size(t,1)
    res=[]
     #Browsing column
@@ -280,9 +281,7 @@ function ComputeNeighbours(i,j,t,islands,new_index)
         end
   end
   if c_right<n-2 && t[i,c_right+1] ==0
-
       c_right+=2
-     
       while c_right<n && t[i,c_right]==0
           c_right+=1
       end
