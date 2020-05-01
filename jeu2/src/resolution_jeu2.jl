@@ -166,17 +166,17 @@ function heuristicSolve(t)
               
                 #Number of neighbours examinated
                 count=0
-                permutation=randperm(size(neighbours,1))
-                print("voisins= ")
-                print(neighbours)
-                print("permutation= ")
-                println(permutation)
+                
                 
                 #While an island has neighbours available and not enough connections
                 while islands[c][4]>0 && neighbours!=[]
                     count+=1
                     
-                    
+                    permutation=randperm(size(neighbours,1))
+                    print("voisins= ")
+                    print(neighbours)
+                    print("permutation= ")
+                    println(permutation)
                     (k,l,v,nbCo)=neighbours[permutation[1]]
                     print("on choisit de le connecter au voisin= ")
                     println(k,l,v,nbCo)
