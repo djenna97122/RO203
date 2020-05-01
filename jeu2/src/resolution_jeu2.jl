@@ -109,8 +109,10 @@ function heuristicSolve(t)
     tCopy=zeros(Int,n,n)
      while !gridFilled
          println("while grid not filled")
+         
         #tableau des iles; une ile = tuple (i,j,val,nbAvailableCo)
         islands=Array{Tuple{Int64,Int64,Any,Int64},1}()
+        
         #tableau des arretes: nbre d'aretes entre (i,j) et à (k,l)
         edges=Array{Int,4}
         edges=zeros(Int,n,n,n,n)
@@ -120,6 +122,7 @@ function heuristicSolve(t)
                 push!(islands,(i,j,t[i,j],t[i,j]))
             end
         end
+        
         #Sorting islands by their values (small value= island with more constraint)
        
         sort!(islands, by = x -> x[3])
@@ -149,58 +152,57 @@ function heuristicSolve(t)
             c-=1
       
          gridStillFeasible = true
-          println(gridStillFeasible)
+            
             # While the grid is not filled and it may still be solvable
             while gridStillFeasible
 
                 (i,j,val,co)=islands[c]
                 print("nouveau sommet: ")
                 println(c," ",i," ",j," ",val," ",co)
+                 
                  #We choose a random way of connecting islands to its neighbours
                 neighbours=ComputeNeighbours(i,j,t,islands,new_index)
                 permutation=Array{Int,1}
               
                 #Number of neighbours examinated
                 count=0
+                permutation=randperm(size(neighbours,1))
+                print("voisins= ")
+                print(neighbours)
+                print("permutation= ")
+                println(permutation)
                 
                 #While an island has neighbours available and not enough connections
                 while islands[c][4]>0 && neighbours!=[]
                     count+=1
-                    permutation=randperm(MersenneTwister(1234),size(neighbours,1))
-                    print("voisins= ")
-                    print(neighbours)
-                    print(" de taille: ")
-                    println(size(neighbours,1))
-                    print("permutation= ")
-                    println(permutation)
+                    
                     
                     (k,l,v,nbCo)=neighbours[permutation[1]]
                     print("on choisit de le connecter au voisin= ")
                     println(k,l,v,nbCo)
+                    
                     #Set the number of connection to (l,c)
-                    minco=min(nbCo,co)
+                     minco=min(nbCo,co)
                     co2set=min(rand(1:minco),2)
                     print("on lui met ")
                     print(co2set)
                     println("aretes ")
                     new_indv=new_index[(k-1)*n+l]
-                    new_ind=new_index[(i-1)*n+j]
                     tuple1=Tuple{Int64,Int64,Any,Int64}[]
                     tuple1= (k,l,v,nbCo-co2set)
                     islands[new_indv] =tuple1
                     tuple2=Tuple{Int64,Int64,Any,Int64}[]
                     tuple2=(i,j,val,co-co2set)
-                    islands[new_ind]=tuple2
+                    islands[c]=tuple2
                     edges[i,j,k,l]=co2set
                     edges[k,l,i,j]=co2set
                   
+                  #Mise a jour
                     (i,j,val,co)=islands[c]
                     print("il lui reste ")
                     print(co)
-                    println("ponts a construire encore ")
+                    println(" ponts a construire encore ")
                     neighbours=ComputeNeighbours(i,j,t,islands,new_index)
-                    println(islands[c][4]>0 )
-                    println(neighbours==[])
                   
                 end
                 #If an island still lacks connection and doesn't have enough neighbours available
@@ -254,8 +256,13 @@ function ComputeNeighbours(i,j,t,islands,new_index)
        while l_up>1 && t[l_up,j]==0
            l_up-=1
        end
+     #  print("lup: ")
+      # println(l_up)
        new_ind=new_index[(l_up-1)*n+j]
+      
        if islands[new_ind][4]>0
+       #print("nb co dispo du voisin haut= ")
+        #     println(islands[new_ind][4])
         push!(res,islands[new_ind])
        end
    end
@@ -265,8 +272,14 @@ function ComputeNeighbours(i,j,t,islands,new_index)
        while l_down<n && t[l_down,j]==0
            l_down+=1
        end
+       print("ldown: ")
+             println(l_down)
+             new_ind=new_index[(l_down-1)*n+j]
+             
        new_ind=new_index[(l_down-1)*n+j]
       if islands[new_ind][4]>0
+    #  print("nb co dispo du voisin bas= ")
+     # println(islands[new_ind][4])
         push!(res,islands[new_ind])
        end
    end
@@ -275,8 +288,14 @@ function ComputeNeighbours(i,j,t,islands,new_index)
       while c_left>1 && t[i,c_left]==0
           c_left-=1
       end
+     # print("l_left: ")
+           # println(c_left)
+            new_ind=new_index[(c_left-1)*n+j]
+            
       new_ind=new_index[(i-1)*n+c_left]
       if islands[new_ind][4]>0
+     # print("nb co dispo du voisin gauche = ")
+       #println(islands[new_ind][4])
              push!(res,islands[new_ind])
         end
   end
@@ -285,8 +304,14 @@ function ComputeNeighbours(i,j,t,islands,new_index)
       while c_right<n && t[i,c_right]==0
           c_right+=1
       end
+      #print("lright: ")
+         #   println(c_right)
+            new_ind=new_index[(c_right-1)*n+j]
+            
       new_ind=new_index[(i-1)*n+c_right]
       if islands[new_ind][4]>0
+      #print("nb co dispo du voisin droite= ")
+       println(islands[new_ind][4])
            push!(res,islands[new_ind])
       end
   end
