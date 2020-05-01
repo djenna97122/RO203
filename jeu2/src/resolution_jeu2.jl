@@ -2,7 +2,7 @@
 using CPLEX
 
 include("generation_jeu2.jl")
-
+using Random
 TOL = 0.00001
 
 """
@@ -97,12 +97,203 @@ end
 """
 Heuristically solve an instance
 """
-function heuristicSolve()
+function heuristicSolve(t)
+    # True if the grid has completely been filled
+    gridFilled = false
 
-    # TODO
-    println("In file resolution.jl, in method heuristicSolve(), TODO: fix input and output, define the model")
+    # True if the grid may still have a solution
+    gridStillFeasible = true
+
+    n = size(t, 1)
+    tCopy =Array{Int,2}
+    tCopy=zeros(Int,n,n)
+     while !gridFilled
+         println("while grid not filled")
+        #tableau des iles; une ile = tuple (i,j,val,nbAvailableCo)
+        islands=Array{Tuple{Int64,Int64,Any,Int64},1}()
+        #tableau des arretes: nbre d'aretes entre (i,j) et à (k,l)
+        edges=Array{Int,4}
+        edges=zeros(Int,n,n,n,n)
+     
+        for i in 1:n
+            for j in 1:n
+                push!(islands,(i,j,t[i,j],t[i,j]))
+            end
+        end
+        #Sorting islands by their values (small value= island with more constraint)
+       
+        sort!(islands, by = x -> x[3])
+     
+        #We save at index (i-1)*n+j the new index of island [i,j]
+        new_index=Array{Int,1}
+        new_index=zeros(Int,n*n)
+        h=1
+        for isl in islands
+            (l1,c1,v1,co1)=isl
+            new_index[(l1-1)*n+c1]=h
+            h+=1
+        end
+        
+      
+        
+            #Go to the first islands because the first cases are empty cells
+            c=1
+            i=0
+            j=0
+            val=0
+            co=0
+            while val==0 && c<n*n
+                (i,j,val,co)=islands[c]
+                c+=1
+            end
+            c-=1
+      
+         gridStillFeasible = true
+          println(gridStillFeasible)
+            # While the grid is not filled and it may still be solvable
+            while gridStillFeasible
+
+                (i,j,val,co)=islands[c]
+                print("nouveau sommet: ")
+                println(c," ",i," ",j," ",val," ",co)
+                 #We choose a random way of connecting islands to its neighbours
+                neighbours=ComputeNeighbours(i,j,t,islands,new_index)
+                permutation=Array{Int,1}
+              
+                #Number of neighbours examinated
+                count=0
+                
+                #While an island has neighbours available and not enough connections
+                while islands[c][4]>0 && neighbours!=[]
+                    count+=1
+                    permutation=randperm(MersenneTwister(1234),size(neighbours,1))
+                    print("voisins= ")
+                    print(neighbours)
+                    print(" de taille: ")
+                    println(size(neighbours,1))
+                    print("permutation= ")
+                    println(permutation)
+                    
+                    (k,l,v,nbCo)=neighbours[permutation[1]]
+                    print("on choisit de le connecter au voisin= ")
+                    println(k,l,v,nbCo)
+                    #Set the number of connection to (l,c)
+                    minco=min(nbCo,co)
+                    co2set=min(rand(1:minco),2)
+                    print("on lui met ")
+                    print(co2set)
+                    println("aretes ")
+                    new_indv=new_index[(k-1)*n+l]
+                    new_ind=new_index[(i-1)*n+j]
+                    tuple1=Tuple{Int64,Int64,Any,Int64}[]
+                    tuple1= (k,l,v,nbCo-co2set)
+                    islands[new_indv] =tuple1
+                    tuple2=Tuple{Int64,Int64,Any,Int64}[]
+                    tuple2=(i,j,val,co-co2set)
+                    islands[new_ind]=tuple2
+                    edges[i,j,k,l]=co2set
+                    edges[k,l,i,j]=co2set
+                  
+                    (i,j,val,co)=islands[c]
+                    print("il lui reste ")
+                    print(co)
+                    println("ponts a construire encore ")
+                    neighbours=ComputeNeighbours(i,j,t,islands,new_index)
+                    println(islands[c][4]>0 )
+                    println(neighbours==[])
+                end
+                #If an island still lacks connection and doesn't have enough neighbours available left
+                if (neighbours==[] && islands[i*(n-1)+j][4]>0)
+                    println("pas assez de voisins dispo")
+                    gridStillFeasible = false
+                end
+                
+                if c==n*n
+                    gridFilled=true
+                    gridStillFeasible=false
+                    tCopy=displayIntermediate2(edges,t)
+                    print(gridFilled,  gridStillFeasible)
+                    return tCopy
+                else
+                    c+=1
+                    (i,j,val,co)=islands[c]
+                end
+            end
+            println(gridFilled)
+    end
+   
     
 end
+
+function affiche(tab)
+    n=size(tab,1)
+    for i in 1:n
+        print(tab[i])
+    end
+end
+"""
+
+Compute the neighbours of island (i,j) which connections available are >0
+Arguments
+- i,j: Int64 coordinates of island
+- t: the grid
+- Return a list of tuples [island1, island2 , ...,]
+"""
+ 
+function ComputeNeighbours(i,j,t,islands,new_index)
+   l_up=i
+   l_down=i
+   c_left=j
+   c_right=i
+   n=size(t,1)
+   res=[]
+    #Browsing column
+   if l_up>2 && t[l_up-1,j] ==0
+       l_up-=2
+       while l_up>1 && t[l_up,j]==0
+           l_up-=1
+       end
+       new_ind=new_index[(l_up-1)*n+j]
+       if islands[new_ind][4]>0
+        push!(res,islands[new_ind])
+       end
+   end
+   if l_down<n-2 && t[l_down+1,j] ==0
+    
+       l_down+=2
+       while l_down<n && t[l_down,j]==0
+           l_down+=1
+       end
+       new_ind=new_index[(l_down-1)*n+j]
+      if islands[new_ind][4]>0
+        push!(res,islands[new_ind])
+       end
+   end
+  if c_left>2 && t[i,c_left-1] ==0
+      c_left-=2
+      while c_left>1 && t[i,c_left]==0
+          c_left-=1
+      end
+      new_ind=new_index[(i-1)*n+c_left]
+      if islands[new_ind][4]>0
+             push!(res,islands[new_ind])
+        end
+  end
+  if c_right<n-2 && t[i,c_right+1] ==0
+
+      c_right+=2
+     
+      while c_right<n && t[i,c_right]==0
+          c_right+=1
+      end
+      new_ind=new_index[(i-1)*n+c_right]
+      if islands[new_ind][4]>0
+           push!(res,islands[new_ind])
+      end
+  end
+return(res)
+end
+
 
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
