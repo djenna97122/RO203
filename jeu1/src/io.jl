@@ -188,12 +188,12 @@ Arguments
 """
 function writeSolution(fout::IOStream, t::Array{VariableRef, 4})
     
-    println(fout, "t = [")
+    println(fout, "#t = [")
     n = size(t, 1)
     
     for l in 1:n
 
-        print(fout, "[ ")
+        print(fout, "#[ ")
         
         for c in 1:n
             x = Int64(1)
@@ -214,8 +214,40 @@ function writeSolution(fout::IOStream, t::Array{VariableRef, 4})
         println(fout, endLine)
     end
 
-    println(fout, "]")
+    println(fout, "#]")
 end
+
+"""
+Write a solution in an output stream
+
+Arguments
+- fout: the output stream (usually an output file)
+- t: 2-dimensional array of size n*n
+"""
+function writeSolution(fout::IOStream, t::Array{Int64, 2})
+    
+    println(fout, "#t = [")
+    n = size(t, 1)
+    
+    for l in 1:n
+
+        print(fout, "#[ ")
+        
+        for c in 1:n
+            print(fout, string(t[l, c]) * " ")
+        end 
+
+        endLine = "]"
+
+        if l != n
+            endLine *= ";"
+        end
+
+        println(fout, endLine)
+    end
+
+    println(fout, "#]")
+end 
 
 
 """

@@ -26,6 +26,12 @@ function cplexSolve(t::Array{Int, 2})
     @constraint(m, [j in 1:n], sum((1/(n-i))*sum(x[i,j,k,j] for k in (i+1):n) for i in 1:(n-1)) + 1 >= t[n+2,j+1])
     @constraint(m, [i in 1:n], sum((1/(n-j))*sum(x[i,j,i,k] for k in (j+1):n) for j in 1:(n-1)) + 1 >= t[i+1,n+2])
 
+    #test : le nb de tours visibles depuis la premiere de la ligne/col est inférieur a la contrainte
+    @constraint(m, [j in 1:n], sum(x[1,j,i,j] for i in 2:n) <= n - t[1,j+1])
+    @constraint(m, [i in 1:n], sum(x[i,1,i,j] for j in 2:n) <= n - t[i+1,1])
+    @constraint(m, [j in 1:n], sum(x[n,j,i,j] for i in 1:(n-1)) <= n - t[n+2,j+1])
+    @constraint(m, [i in 1:n], sum(x[i,n,i,j] for j in 1:(n-1)) <= n - t[i+1,n+2])
+
     # sum(x[i,j,i,k] for k in 1:n) + 1 = t_ij
     @constraint(m, [i in 1:n, j in 1:n], sum(x[i,j,i,k] for k in 1:n) - sum(x[i,j,k,j] for k in 1:n) == 0)
     @constraint(m, [i in 1:n, j in 1:n], sum(x[i,j,i,k] for k in 1:n) <= n - 1)
@@ -69,7 +75,7 @@ end
 """
 Heuristically solve an instance
 """
-function heuristicSolve(t::Array{Int, 2}, checkFeasibility::Bool)
+function heuristicSolve(t::Array{Int, 2})
 
     n = size(t, 1)-2
     tCopy = []
@@ -143,26 +149,7 @@ function heuristicSolve(t::Array{Int, 2}, checkFeasibility::Bool)
             else
                 
                 newValue = ceil.(Int, rand() * size(values, 1))
-                if checkFeasibility
-                    
-                    gridStillFeasible = false
-                    id = 1
-                    while !gridStillFeasible && id <= size(values, 1)
-
-                        tCopy[mcCell[1], mcCell[2]] = values[rem(newValue, size(values, 1)) + 1]
-                        
-                        if isGridFeasible(tCopy)
-                            gridStillFeasible = true
-                        else
-                            newValue += 1
-                        end
-
-                        id += 1
-                        
-                    end
-                else 
-                    tCopy[mcCell[1], mcCell[2]] = values[newValue]
-                end 
+                tCopy[mcCell[1], mcCell[2]] = values[newValue]
             end 
         end  
     end  
@@ -206,7 +193,7 @@ function possibleValues2(d::Array{Int, 2}, t::Array{Int, 2}, l::Int64, c::Int64)
     vg = 1 # nb tours visibles avant [l, c] sur la ligne a gauche
     if c != 1
         for j in 2:(c-1) 
-            if t[l, j] > mg
+            if t[l, j] > mg && mg > 0
                 mg = t[l, j]
                 vg += 1
             end
@@ -223,7 +210,7 @@ function possibleValues2(d::Array{Int, 2}, t::Array{Int, 2}, l::Int64, c::Int64)
     vb = 1 # nb tours visibles avant [l, c] sur la colonne bas
     if l != n
         for i in (l+1):n 
-            if t[n+l+1-i, c] > mb
+            if t[n+l+1-i, c] > mb && mb > 0
                 mb = t[i, c]
             end
         end
@@ -232,7 +219,7 @@ function possibleValues2(d::Array{Int, 2}, t::Array{Int, 2}, l::Int64, c::Int64)
         return values
     end
     if d[n+2, c+1] == vb
-        if mb < m
+        if mb < m && mb > 0
             m = mb # la tour ne doit pas etre visible en bas
         end
     end
@@ -241,7 +228,7 @@ function possibleValues2(d::Array{Int, 2}, t::Array{Int, 2}, l::Int64, c::Int64)
     vd = 1 # nb tours visibles avant [l, c] sur la ligne a droite
     if c != n
         for j in (c+1):n
-            if t[l, n+c+1-j] > md
+            if t[l, n+c+1-j] > md && md > 0
                 md = t[l, j]
             end
         end
@@ -250,7 +237,7 @@ function possibleValues2(d::Array{Int, 2}, t::Array{Int, 2}, l::Int64, c::Int64)
         return values
     end
     if d[l+1, n+2] == vd
-        if md < m
+        if md < m && md > 0
             m = md # la tour ne doit pas etre visible a droite
         end
     end
@@ -259,7 +246,7 @@ function possibleValues2(d::Array{Int, 2}, t::Array{Int, 2}, l::Int64, c::Int64)
     vh = 1 # nb tours visibles avant [l, c] sur la colonne en haut
     if l != 1
         for i in 2:(l-1) 
-            if t[i, c] > mh
+            if t[i, c] > mh && mh > 0
                 mh = t[i, c]
             end
         end
@@ -268,17 +255,25 @@ function possibleValues2(d::Array{Int, 2}, t::Array{Int, 2}, l::Int64, c::Int64)
         return values
     end
     if d[1, c+1] == vh
-        if mh < m
+        if mh < m && mh > 0
             m = mh # la tour ne doit pas etre visible en haut
         end 
     end
     
-    for v in 1:n
-        if isValid(t, l, c, v) && v<m
-            values = append!(values, v)
+    if m > 0
+        for v in 1:n
+            if isValid(t, l, c, v) && v<m
+                values = append!(values, v)
+            end 
         end 
-    end 
-
+    else
+        for v in 1:n
+            if isValid(t, l, c, v) 
+                values = append!(values, v)
+            end 
+        end 
+    end
+    
     return values
     
 end
@@ -296,8 +291,8 @@ function solveDataSet()
     resFolder = "../res/"
 
     # Array which contains the name of the resolution methods
-    resolutionMethod = ["cplex"]
-    #resolutionMethod = ["cplex", "heuristique"]
+    #resolutionMethod = ["cplex"]
+    resolutionMethod = ["cplex", "heuristique"]
 
     # Array which contains the result folder of each resolution method
     resolutionFolder = resFolder .* resolutionMethod
@@ -347,18 +342,16 @@ function solveDataSet()
                 else
                     
                     isSolved = false
+                    solution = []
 
                     # Start a chronometer 
                     startingTime = time()
                     
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
-                        
-                        # TODO 
-                        println("In file resolution.jl, in method solveDataSet(), TODO: fix heuristicSolve() arguments and returned values")
-                        
+                                                                        
                         # Solve it and get the results
-                        isOptimal, resolutionTime = heuristicSolve()
+                        isOptimal, solution = heuristicSolve(t)
 
                         # Stop the chronometer
                         resolutionTime = time() - startingTime
@@ -367,10 +360,7 @@ function solveDataSet()
 
                     # Write the solution (if any)
                     if isOptimal
-
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write the heuristic solution in fout")
-                        
+                        writeSolution(fout, solution)
                     end 
                 end
 

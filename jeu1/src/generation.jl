@@ -143,7 +143,7 @@ function generateInstance(n::Int64)
             i += 1            
         end
     end
-    return c, t 
+    return c
 end
 
 
