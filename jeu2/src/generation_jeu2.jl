@@ -16,89 +16,264 @@ function generateInstance(n::Int64, density::Float64)
    # True if the current grid has no conflicts
     isGridValid = false
     t = []
-
-
+    
    # While a valid grid is not obtained we initialize a new grid
     while !isGridValid
+        println("new attempt")
        t = zeros(Int, n, n)
        isGridValid = true
+       
        #number of cells filled
-       c = 0
+       cells = 0
+       
        # While the grid is valid and the required number of cells is not filled we fill in the grid with a new number
-       while c < (n*n*density) || !isGridValid
-           # Randomly select a cell and a value
-           l = ceil.(Int, n * rand())
-           c = ceil.(Int, n * rand())
-           v = ceil.(Int, 6 * rand())
+       while cells < (n*n*density) && isGridValid
            
-               # Initialisation of a file which will contain the islands to treat
-               f=Stack{Array}()
-               push!(f,[l,c,v])
-               # an island is valid only if the number of connection it can get is at least v
-               # While file is not empty we add enough islands that can connect to current island
-               while !isempty(f) && isGridValid
-                   el=pop!(f)
-                   i=el[1]
-                   j=el[2]
-                   val=el[3]
-                   println("i:",i," ","j:",j," ","val:",val)
-                   #If there is enough space around (i,j) for value val we add the island to the grid
-                   if gets_space(i,j,val,t)
-                    println("enough space")
-                     t[i,j]=val
-                     c+=1
+           # Randomly select a cell and a value
+           i = ceil.(Int, n * rand())
+           j= ceil.(Int, n * rand())
+           val = ceil.(Int, 6 * rand())
+            
+           # True if a value has not already been assigned to the cell (l, c) or if it is not a cell between 2 islands neighbours
+           isCellFree = t[i, j] ==0
+           
+           # True if value v can be set in cell (l, c)
+           isValueValid = isValid(t, i, j, val)
+           
+           # Number of value that we already tried to assign to cell (l, c)
+           attemptCount = 0
+           
+            # Number of cells considered in the grid
+            testedCells = 1
+        
+            #While the cell is not valid and while all the cells have not been considered
+             while !(isCellFree&& isValueValid) && testedCells < n*n
+                println("test cell, val valide")
+                if !isCellFree  || attemptCount == n
+                    # Go to the next cell
+                    if j < n
+                        j += 1
+                    else
+                        if i < n
+                            i += 1
+                            j = 1
+                        else
+                            i = 1
+                            j = 1
+                        end
                     end
                     
-                    testedCells=0
+                    testedCells += 1
+                    print("tested cells= ")
+                    println(testedCells)
+                    isCellFree = t[i, j] == 0
+                    isValueValid = isValid(t,i, j,val)
+                    attemptCount = 0
+                else
+                    val=rem(val,n)+1
+                    attemptCount += 1
+
+                end
+                println("fin test cell, val valide")
+            #Fin while !isCellFree && testedCells < n*n
+            end
+            print("cellule a remplir= ")
+            println(i, j, val)
+            if testedCells == n*n
+               isGridValid = false
+               println("toutes cellules testees")
+            else
+                t[i,j]=val
+                Atraiter=[(i,j,val)]
+                while Atraiter!=[] && isGridValid
+                
+                    (l,c,v)=popfirst!(Atraiter)
+                    print(" voisin a traiter= ")
+                    println(l, c, v )
                     
-                   #While the number of connection is insufficient we add a neighbour to the grid and add it to the file to analyze it after
-                  
-                   while nbco_neighbours(i,j,val,t)<val && testedCells<2*(n-1)
+                    cells+=1
                     
-                        v2 = ceil.(Int, 6 * rand())
-                        println("v2:",v2)
-                        # if ind_lc==1 we add it on the same line if ind_lc==2 we add it on the same colonne
-                        ind_lc=ceil.(Int, 2 * rand())
-                        position=ceil.(Int, n * rand())
-                        println(position)
-                        if ind_lc==1 && position != j
-                                testedCells+=1
-                                if gets_space(i,position,v2,t)
-                                    println("ajout meme ligne ","colonne: ",position)
-                                   t[i,position]=v2
-                                   c+=1
-                                   push!(f,[i,position,v2])
-                                else
-                                    println("not enough space")
+                    (b,l1,c1,val1,l2,c2,val2)=set_neighbours(l,c,v,n,t)
+        
+                    #If setneighbours hasn't found available cells for the neighbours of cells, the grid is not valid
+                    if !b
+                        isGridValid = false
+                        println("pas de neighbours possibles")
+                    else
+                        push!(Atraiter,(l,c1,val1))
+                        push!(Atraiter,(l2,c,val2))
+                        t[l,c1]=val1
+                        t[l2,c]=val2
+                        print("voisin 1= ")
+                        println((l,c1,val1))
+                        print("voisin 2= ")
+                        println((l2,c,val2))
+                       #Our program impose cells to be one box away at list
+                        if l>1
+                            if t[l-1,c1]==0
+                                t[l-1,c1]=-1
+                                cells+=1
+                            end
+                        end
+                        if l<n
+                            if t[l+1,c1]==0
+                               t[l+1,c1]=-1
+                               cells+=1
+                            end
+                        end
+                        if c1>1
+                            if t[l,c1-1]==0
+                                t[l,c1-1]=-1
+                                cells+=1
+                            end
+                        end
+                        if c1<n
+                            if t[l,c1+1]==0
+                                t[l,c1+1]=-1
+                                cells+=1
+                            end
+                        end
+                        
+                        if l2>1
+                            if t[l2-1,c]==0
+                                t[l2-1,c]=-1
+                                cells+=1
+                            end
+                        end
+                        if l2<n
+                            if t[l2+1,c]==0
+                               t[l2+1,c]=-1
+                               cells+=1
+                            end
+                        end
+                        if c>1
+                            if t[l2,c-1]==0
+                                t[l2,c-1]=-1
+                                cells+=1
+                            end
+                        end
+                        if c<n
+                            if t[l2,c+1]==0
+                                t[l2,c+1]=-1
+                                cells+=1
+                            end
+                        end
+                        #We set cells between (l,c) and its neighbours as unavailable
+                        #Set neighbours impose l1=l and c2=c
+                        if val1 >0
+                            if c1<c #if cell1 is on the left of cell
+                                for k in c1+1:c-1
+                                    t[l,k]=-1
+                                    cells+=1
                                 end
-                          
-                        elseif ind_lc==2
-                            if position !=i
-                                testedCells += 1
-                                if gets_space(position,j,v2,t)
-                                 println("ajout meme colonne ","ligne: ",position)
-                                    t[position,j]=v2
-                                    c+=1
-                                    push!(f,[position,j,v2])
-                                else
-                                    println("not enough space")
+                            else # cell1 is on the right of cell
+                                for k in c+1:c1-1
+                                    t[l,k]=-1
+                                    cells+=1
                                 end
                             end
                         end
-                   #Fin while nbco_neighbours(i,j,val,t)<val && testedCells<2*(n-1)
-                   end
-                   if (nbco_neighbours(i,j,val,t)<val && testedCells==2*(n-1))
-                       isGridValid = false
-                   end
-               #Fin while f!=[] && while isGridValid
-               end
-       #Fin c < n*n*density
-       end
-    # Fin while !isGridValid
-    return t
-    end
+                        if val2 >0
+                            if l2<l #if cell2 is on top of cell
+                                for k in l2+1:l-1
+                                    t[k,c]=-1
+                                    cells+=1
+                                end
+                            else #if cell2 is under cell
+                                for k in l+1:l2-1
+                                    t[k,c]=-1
+                                    cells+=1
+                                end
+                            end
+                        end
+                    #Fin if !b
+                    end
+                    println(t)
+                #Fin while Atraiter!=[]
+                end
+            #Fin if tested cells=n*n
+            end
+        #Fin while c < (n*n*density) && isGridValid
+        end
+     #Fin while !isGridValid
+     end
+     return t
+end
 
-end 
+function isValid(t,i,j,v)
+    valid=true
+    if ((i,j)==(1,1) || (i,j)==(1,5) ||(i,j)==(5,1) ||(i,j)==(5,5)) && v>=5
+        valid=false
+    end
+    return valid
+end
+
+function set_neighbours(l,c,v,n,t)
+        c1=ceil.(Int, n * rand())
+        l2=ceil.(Int, n * rand())
+       """
+        print("c1= ")
+        println(c1)
+         print("l2 ")
+         println(l2)
+         """
+        res=true
+        attemptCount=0
+        while t[l,c1]!=0 && attemptCount<(n-1)
+   """
+            print("c1 ")
+            println(c1)
+            print("t[l,c1] = ")
+            println(t[l,c1])
+            """
+            c1=rem(c1,n)+1
+            attemptCount+=1
+        end
+        
+        if (attemptCount==(n-1) && t[l,c1]!=0)
+            res=false
+        end
+        
+        attemptCount=0
+        while t[l2,c]!=0 && attemptCount<2(n-1)
+            """
+            print("l2 ")
+            println(l2)
+                print("t[l2,c]= ")
+            println(t[l2,c])
+        """
+            l2=rem(l2,n)+1
+            attemptCount+=1
+        end
+       if (attemptCount==(n-1) && t[l2,c]!=0)
+            res=false
+        end
+        
+        val1=0
+        val2=0
+        while val1+val2 <v
+            if (l,c1)==(1,1) || (l,c1)==(1,5) ||(l,c1)==(5,1) ||(l,c1)==(5,5)
+                val1=floor.(Int, 5 * rand())
+            end
+            
+            if (l2,c)==(1,1) || (l2,c)==(1,5) ||(l2,c)==(5,1) ||(l2,c)==(5,5)
+                val1=floor.(Int, 5 * rand())
+            end
+            val1=floor.(Int, 7 * rand())
+            val2=floor.(Int, 7 * rand())
+            """
+            print("val1= ")
+            println(val1)
+            print("val2= ")
+            println(val2)
+          """
+        end
+    return(res,l,c1,val1,l2,c,val2)
+end
+
+function potential_neighbours(i,j,t)
+
+end
 
 function gets_space(i::Int,j::Int,val::Int,t::Array{Int,2})
     n=size(t,1)
@@ -148,7 +323,6 @@ function gets_space(i::Int,j::Int,val::Int,t::Array{Int,2})
     end
     return space
 end
-
 function nbco_neighbours(i::Int64,j::Int64,val::Int64,t::Array{Int,2})
     l_up=i
     l_down=i
