@@ -255,22 +255,29 @@ function writeSolution(file::String,t::Array{Any, 2})
    
     open(file, "w") do fout
         n = size(t, 1)
-        
+        println(fout, "#t = [")
         for l in 1:n
-
+            print(fout, "#[ ")
              for c in 1:n
-                    if t[l,c]==0
-                        write(fout," ")
-                    elseif t[l,c]== "||"
-                        write(fout,string(t[l,c]))
+                    if  t[l,c]== "||"
+                       print(fout,string(t[l,c]))
+                    elseif t[l,c]==0
+                        print(fout," "  * " ")
                     else
-                        write(fout,string(t[l,c]) *" ")
+                        print(fout,string(t[l,c]) *" ")
                     end
              end
-        write(fout,"\n")
+            print(" ")
+            endLine = "]"
+            if l != n
+                endLine *= ";"
+            end
+            println(fout, endLine)
         end
-        write(fout,"\n")
+        println(fout, "]")
+        print(fout,"\n")
     end
+     
 end
 
 """
@@ -287,7 +294,7 @@ Prerequisites:
 """
 function performanceDiagram(outputFile::String)
 
-    resultFolder = "../res/"
+    resultFolder = "/Users/djennaedom/Documents/ENSTA/2A/RO203/Bloc 2/Projet_RO203/jeu2/res/"
     
     # Maximal number of files in a subfolder
     maxSize = 0
@@ -332,21 +339,23 @@ function performanceDiagram(outputFile::String)
     for file in readdir(resultFolder)
             
         path = resultFolder * file
-        
+    println(path)
+     println(isdir(path))
         if isdir(path)
 
             folderCount += 1
             fileCount = 0
-
+           
             # For each text file in the subfolder
             for resultFile in filter(x->occursin(".txt", x), readdir(path))
-
+                println("line 343")
                 fileCount += 1
                 include(path * "/" * resultFile)
-
+              
                 if isOptimal
                     results[folderCount, fileCount] = solveTime
-
+                    print("isopti= ")
+                    println(isOptimal)
                     if solveTime > maxSolveTime
                         maxSolveTime = solveTime
                     end
@@ -354,7 +363,7 @@ function performanceDiagram(outputFile::String)
             end
         end
     end
-
+        println(results)
     # Sort each row increasingly
     results = sort(results, dims=2)
 
@@ -387,7 +396,8 @@ function performanceDiagram(outputFile::String)
                 currentId += 1
                 identicalValues += 1
             end
-
+            print("line 392")
+    
             # Add the proper points
             append!(x, previousX)
             append!(y, currentId - 1)
@@ -404,10 +414,11 @@ function performanceDiagram(outputFile::String)
 
         append!(x, maxSolveTime)
         append!(y, currentId - 1)
-
+println(x)
+println(dim)
         # If it is the first subfolder
         if dim == 1
-
+        
             # Draw a new plot
             plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
 
@@ -433,8 +444,8 @@ Prerequisites:
 """
 function resultsArray(outputFile::String)
     
-    resultFolder = "../res/"
-    dataFolder = "../data/"
+    resultFolder = "/Users/djennaedom/Documents/ENSTA/2A/RO203/Bloc 2/Projet_RO203/jeu2/res"
+    dataFolder = "/Users/djennaedom/Documents/ENSTA/2A/RO203/Bloc 2/Projet_RO203/jeu2/data"
     
     # Maximal number of files in a subfolder
     maxSize = 0
