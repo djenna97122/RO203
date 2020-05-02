@@ -84,6 +84,7 @@ function generateInstance(n::Int64, density::Float64)
                println("toutes cellules testees")
             else
                 t[i,j]=val
+                t=set_void(i,j,t)
                 Atraiter=[(i,j,val)]
                 while Atraiter!=[] && isGridValid
                 
@@ -109,55 +110,9 @@ function generateInstance(n::Int64, density::Float64)
                         print("voisin 2= ")
                         println((l2,c,val2))
                        #Our program impose cells to be one box away at list
-                        if l>1
-                            if t[l-1,c1]==0
-                                t[l-1,c1]=-1
-                                cells+=1
-                            end
-                        end
-                        if l<n
-                            if t[l+1,c1]==0
-                               t[l+1,c1]=-1
-                               cells+=1
-                            end
-                        end
-                        if c1>1
-                            if t[l,c1-1]==0
-                                t[l,c1-1]=-1
-                                cells+=1
-                            end
-                        end
-                        if c1<n
-                            if t[l,c1+1]==0
-                                t[l,c1+1]=-1
-                                cells+=1
-                            end
-                        end
+                       t=set_void(l,c1,t)
+                       t=set_void(l2,c,t)
                         
-                        if l2>1
-                            if t[l2-1,c]==0
-                                t[l2-1,c]=-1
-                                cells+=1
-                            end
-                        end
-                        if l2<n
-                            if t[l2+1,c]==0
-                               t[l2+1,c]=-1
-                               cells+=1
-                            end
-                        end
-                        if c>1
-                            if t[l2,c-1]==0
-                                t[l2,c-1]=-1
-                                cells+=1
-                            end
-                        end
-                        if c<n
-                            if t[l2,c+1]==0
-                                t[l2,c+1]=-1
-                                cells+=1
-                            end
-                        end
                         #We set cells between (l,c) and its neighbours as unavailable
                         #Set neighbours impose l1=l and c2=c
                         if val1 >0
@@ -207,49 +162,59 @@ function isValid(t,i,j,v)
     end
     return valid
 end
-
+"""
+return a tuple with
+- a boolean res: true if we have succeed to generate neighbours for the island (l,c)
+- 4 indices = coordinates of the neighbours. First is on the same line, second one on the same column
+"""
 function set_neighbours(l,c,v,n,t)
-        c1=ceil.(Int, n * rand())
-        l2=ceil.(Int, n * rand())
-       """
-        print("c1= ")
-        println(c1)
-         print("l2 ")
-         println(l2)
-         """
-        res=true
-        attemptCount=0
-        while t[l,c1]!=0 && attemptCount<(n-1)
-   """
-            print("c1 ")
-            println(c1)
-            print("t[l,c1] = ")
-            println(t[l,c1])
-            """
-            c1=rem(c1,n)+1
-            attemptCount+=1
-        end
-        
-        if (attemptCount==(n-1) && t[l,c1]!=0)
-            res=false
-        end
-        
-        attemptCount=0
-        while t[l2,c]!=0 && attemptCount<2(n-1)
-            """
-            print("l2 ")
-            println(l2)
-                print("t[l2,c]= ")
-            println(t[l2,c])
+     #Choose directions for the neighbours
+     dhor=rand(1:2)
+     dvert=rand(1:2)
+     
+     if dhor=1 #left neighbour
+        c1=rand(c_left-2:c+2)
+    end
+    l2=ceil.(Int, n * rand())
+    """
+    print("c1= ")
+    println(c1)
+        print("l2 ")
+        println(l2)
         """
-            l2=rem(l2,n)+1
-            attemptCount+=1
-        end
-       if (attemptCount==(n-1) && t[l2,c]!=0)
-            res=false
-        end
-        
-        val1=0
+    res=true
+    attemptCount=0
+    while t[l,c1]!=0 && attemptCount<(n-1)
+   """
+        print("c1 ")
+        println(c1)
+        print("t[l,c1] = ")
+        println(t[l,c1])
+        """
+        c1=rem(c1,n)+1
+        attemptCount+=1
+    end
+    
+    if (attemptCount==(n-1) && t[l,c1]!=0)
+        res=false
+    end
+    
+    attemptCount=0
+    while t[l2,c]!=0 && attemptCount<2(n-1)
+        """
+        print("l2 ")
+        println(l2)
+        print("t[l2,c]= ")
+        println(t[l2,c])
+        """
+        l2=rem(l2,n)+1
+        attemptCount+=1
+    end
+    if (attemptCount==(n-1) && t[l2,c]!=0)
+        res=false
+    end
+
+    val1=0
         val2=0
         while val1+val2 <v
             if (l,c1)==(1,1) || (l,c1)==(1,5) ||(l,c1)==(5,1) ||(l,c1)==(5,5)
@@ -266,15 +231,92 @@ function set_neighbours(l,c,v,n,t)
             println(val1)
             print("val2= ")
             println(val2)
+            
+            CALCULER VALIDITER NEIGHBOURS
           """
         end
     return(res,l,c1,val1,l2,c,val2)
 end
-
+"""
+return the limits to set neighbours for (i,j) in t in each direction if limit=0 it means no neighbours can be set
+"""
 function potential_neighbours(i,j,t)
+    l_up=i
+    l_down=i
+    c_left=j
+    c_right=i
+    n=size(t,1)
+    
+    if l_up>2 && t[l_up-1,j] ==0
+          l_up-=2
+          while l_up>1 && t[l_up,j]==0
+              l_up-=1
+          end
+          if  t[l_up,j]==-1 || (t[l_up,j]!=0) #no neighbours possible on the upside otherwise bridges will cross
+            l_up=0
+        else
+            l_up+=2
+          end
+      end
+     
+      if l_down<n-2 && t[l_down+1,j] ==0
+          l_down+=2
+          while l_down<n && t[l_down,j]==0
+              l_down+=1
+          end
+          if  t[l_down,j]==-1 || (l_down==1 && t[l_up,j]!=0#no neighbours possible on the downside otherwise bridges will cross
+            l_down=0
+          end
+      end
+     
+     if c_left>2 && t[i,c_left-1] ==0
+         c_left-=2
+         while c_left>1 && t[i,c_left]==0
+             c_left-=1
+         end
+        if  t[l,c_left]==-1 #no neighbours possible on the left side otherwise bridges will cross
+           c_left=0
+         end
+     end
+    
+     if c_right<n-2 && t[i,c_right+1] ==0
+         c_right+=2
+         while c_right<n && t[i,c_right]==0
+             c_right+=1
+         end
+         if  t[l,c_right]==-1 #no neighbours possible on the left side otherwise bridges will cross
+           c_right=0
+         end
+     end
+return (l_up,l_down,c_left,c_right)
+end
+function set_void(l,c,t)
+    if l>1
+        if t[l-1,c]==0
+            t[l-1,c]=-1
+            cells+=1
+        end
+    end
+    if l<n
+        if t[l+1,c]==0
+           t[l+1,c]=-1
+           cells+=1
+        end
+    end
+    if c>1
+        if t[l,c-1]==0
+            t[l,c-1]=-1
+            cells+=1
+        end
+    end
+    if c1<n
+        if t[l,c+1]==0
+            t[l,c+1]=-1
+            cells+=1
+        end
+    end
 
 end
-
 function gets_space(i::Int,j::Int,val::Int,t::Array{Int,2})
     n=size(t,1)
     space=true
