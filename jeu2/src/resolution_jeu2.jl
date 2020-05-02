@@ -98,6 +98,7 @@ end
 Heuristically solve an instance
 """
 function heuristicSolve(t)
+    start = time()
     # True if the grid has completely been filled
     gridFilled = false
 
@@ -164,42 +165,42 @@ function heuristicSolve(t)
                     (neighbours,b)=ComputeNeighbours(i,j,t,islands,new_index)
                     
                      #If an island still lacks connection and doesn't have enough neighbours available
-                    if b<val
+                    
+                    if b<co
                         gridStillFeasible = false
                         println("pas assez de voisin dispos")
                     else
-                        
-                        permutation=Array{Int,1}
                       
                         #Number of neighbours examinated
                         count=0
-                        permutation=shuffle_al(neighbours)
-                        print("voisins= ")
-                        println(neighbours)
-
-                      #  print("permutation= ")
-                      #  println(permutation)
-                        co2set=set_bridges(islands[c],permutation)
+                
+                        co2set=set_bridges(islands[c],neighbours)
                         
                        for count in 1:size(co2set,1)
                        
-                            (k,l,v,nbCo)=permutation[count]
-                            """
+                            (k,l,v,nbCo)=neighbours[count]
+                            
                             print("on choisit de le connecter au voisin= ")
                             println(k,l,v,nbCo)
                             
                             print("on lui met ")
                             print(co2set[count])
                             println("aretes ")
-                           """
+                           
                             tuple1=Tuple{Int64,Int64,Any,Int64}[]
                             tuple1= (k,l,v,nbCo-co2set[count])
                             new_indv=new_index[(k-1)*n+l]
-                            islands[new_indv] =tuple1
+                            islands[new_indv]=tuple1
+                            print("le voisin est mtn: ")
+                            println(islands[new_indv])
+                            
                             
                             tuple2=Tuple{Int64,Int64,Any,Int64}[]
                             tuple2=(i,j,val,co-co2set[count])
                             islands[c]=tuple2
+                            print("l'iles est mtn': ")
+                            println(islands[c])
+                              (i,j,val,co)=islands[c]
                             edges[i,j,k,l]=co2set[count]
                             edges[k,l,i,j]=co2set[count]
                       end
@@ -209,13 +210,12 @@ function heuristicSolve(t)
                         
                     end
                 end
-                    if c==n*n
+                    if c==n*n && gridStillFeasible
                         gridFilled=true
-                        gridStillFeasible=false
                         tCopy=displayIntermediate_heur(edges,t)
-                        print(gridFilled,  gridStillFeasible)
-                        return tCopy
-                    else
+                        return gridFilled,tCopy,time()-start
+                        
+                    elseif c<n*n
                         c+=1
                         (i,j,val,co)=islands[c]
                     end
@@ -252,8 +252,8 @@ function ComputeNeighbours(i,j,t,islands,new_index)
        l_up-=2
        while l_up>1 && t[l_up,j]==0
            l_up-=1
-           print("lup: ")
-          println(l_up)
+          # print("lup: ")
+          #println(l_up)
        end
        
        new_ind=new_index[(l_up-1)*n+j]
@@ -270,8 +270,8 @@ function ComputeNeighbours(i,j,t,islands,new_index)
        l_down+=2
        while l_down<n && t[l_down,j]==0
            l_down+=1
-            print("ldown: ")
-            println(l_down)
+       #     print("ldown: ")
+        #    println(l_down)
       end
        new_ind=new_index[(l_down-1)*n+j]
      
@@ -286,8 +286,8 @@ function ComputeNeighbours(i,j,t,islands,new_index)
       c_left-=2
       while c_left>1 && t[i,c_left]==0
            c_left-=1
-            print("c_left: ")
-            println(c_left)
+      #     print("c_left: ")
+       #     println(c_left)
         end
             new_ind=new_index[(c_left-1)*n+j]
             
@@ -303,8 +303,8 @@ function ComputeNeighbours(i,j,t,islands,new_index)
       c_right+=2
       while c_right<n && t[i,c_right]==0
         c_right+=1
-        print("cright: ")
-        println(c_right)
+       # print("cright: ")
+      #  println(c_right)
       end
             new_ind=new_index[(c_right-1)*n+j]
             
@@ -319,9 +319,9 @@ function ComputeNeighbours(i,j,t,islands,new_index)
 return(res,s)
 end
 
-function set_bridges(sommet,permutation)
+function set_bridges(sommet,neighbours)
    
-    nb_vois=size(permutation,1)
+    nb_vois=size(neighbours,1)
     found=false
     while !found
     co2set=[]
@@ -338,8 +338,8 @@ function set_bridges(sommet,permutation)
                # print("on traite le voisin numero ")
                 #println(ind)
                 #Set the number of connection to neighbour[ind]
-                maxco=min(set,permutation[ind][4])
-                push!(co2set,min(rand(1:maxco),2))
+                maxco=min(set,neighbours[ind][4])
+                push!(co2set,min(rand(0:maxco),2))
                 set-=co2set[ind]
             end
         if set==0
@@ -351,22 +351,7 @@ function set_bridges(sommet,permutation)
     
 end
 
-function shuffle_al(neighbours)
-    perm=[]
-    ind=Vector{Int}
-    ind=zeros(size(neighbours,1))
-    for k in 1:size(neighbours,1)
-        ind[k]=k
-    end
-    # print("ind apres perm = ")
-    shuffle!(ind)
-   # println(ind)
-    for j in 1:size(neighbours,1)
 
-        push!(perm,neighbours[Int64(ind[j])])
-    end
-    return perm
-end
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
 The results are written in "../res/cplex" and "../res/heuristic"
@@ -380,8 +365,8 @@ function solveDataSet()
 
 
     # Array which contains the name of the resolution methods
-    resolutionMethod = ["cplex"]
-    #resolutionMethod = ["cplex", "heuristique"]
+    #resolutionMethod = ["cplex"]
+    resolutionMethod = ["cplex", "heuristique"]
 
     # Array which contains the result folder of each resolution method
     resolutionFolder = resFolder .* resolutionMethod
@@ -429,18 +414,16 @@ function solveDataSet()
                 else
                     
                     isSolved = false
-
+                    solution=[]
                     # Start a chronometer
                     startingTime = time()
                     
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
                         
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: fix heuristicSolve() arguments and returned values")
                         
                         # Solve it and get the results
-                        isOptimal, resolutionTime = heuristicSolve()
+                        isOptimal, solution, resolutionTime = heuristicSolve(t)
 
                         # Stop the chronometer
                         resolutionTime = time() - startingTime
@@ -450,8 +433,7 @@ function solveDataSet()
                     # Write the solution (if any)
                     if isOptimal
 
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write the heuristic solution in fout")
+                        writeSolution(outputFile,solution)
                         
                     end
                 end
