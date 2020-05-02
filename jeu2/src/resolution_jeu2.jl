@@ -236,7 +236,9 @@ Compute the neighbours of island (i,j) which connections available are >0
 Arguments
 - i,j: Int64 coordinates of island
 - t: the grid
-- Return a list of tuples [island1, island2 , ...,]
+- islands: list of islands sorted
+- new_index: list of the new indices of the islands in the sorted list
+- Return a list of tuples [island1, island2] which are the neighbours of (i,j) which still have bridges available
 """
  
 function ComputeNeighbours(i,j,t,islands,new_index)
@@ -282,6 +284,7 @@ function ComputeNeighbours(i,j,t,islands,new_index)
          s+=islands[new_ind][4]
        end
    end
+   
   if c_left>2 && t[i,c_left-1] ==0
       c_left-=2
       while c_left>1 && t[i,c_left]==0
@@ -453,4 +456,6 @@ function solveDataSet()
         end
     end
 end
+
+
 
