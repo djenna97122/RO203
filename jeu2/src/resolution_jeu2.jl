@@ -99,6 +99,7 @@ Heuristically solve an instance
 """
 function heuristicSolve(t)
     start = time()
+    resolutionTime=time()-start
     # True if the grid has completely been filled
     gridFilled = false
 
@@ -108,7 +109,8 @@ function heuristicSolve(t)
     n = size(t, 1)
     tCopy =Array{Int,2}
     tCopy=zeros(Int,n,n)
-     while !gridFilled
+     
+     while !gridFilled && resolutionTime<30
           println("new attempt")
          
         #tableau des iles; une ile = tuple (i,j,val,nbAvailableCo)
@@ -156,6 +158,7 @@ function heuristicSolve(t)
             while gridStillFeasible
 
                 (i,j,val,co)=islands[c]
+             
                 print("nouveau sommet: ")
                 println(c," ",i," ",j," ",val," ",co)
                 
@@ -207,20 +210,25 @@ function heuristicSolve(t)
                  
                               
                        
-                        
+                    #Fin if b<co
                     end
+                 #Fin if co>0
                 end
                     if c==n*n && gridStillFeasible
                         gridFilled=true
-                        tCopy=displayIntermediate_heur(edges,t)
-                        return gridFilled,tCopy,time()-start
+                        
+                        return gridFilled,edges,time()-start
                         
                     elseif c<n*n
                         c+=1
                         (i,j,val,co)=islands[c]
                     end
-               
+            #Fin while gridStillFeasible
             end
+            
+        resolutionTime=time()-start
+        #Fin while !gridFilled
+        return false,edges,time
         end
 end
 
@@ -230,6 +238,7 @@ function affiche(tab)
         print(tab[i])
     end
 end
+
 """
 
 Compute the neighbours of island (i,j) which connections available are >0
@@ -414,24 +423,29 @@ function solveDataSet()
                     end
 
                 # If the method is one of the heuristics
+               
+               
                 else
                     
+                    println("ecriture methode heur")
                     isSolved = false
                     solution=[]
                     # Start a chronometer
                     startingTime = time()
-                    
-                    # While the grid is not solved and less than 100 seconds are elapsed
-                    while !isOptimal && resolutionTime < 100
-                        
-                        
+                            
+                    # While the grid is not solved and less than 30 seconds are elapsed
+                    while !isOptimal && resolutionTime < 30
+                                        
+                                        
                         # Solve it and get the results
-                        isOptimal, solution, resolutionTime = heuristicSolve(t)
-
+                        isOptimal, edges, resolutionTime = heuristicSolve(t)
+                        println(isOptimal)
                         # Stop the chronometer
                         resolutionTime = time() - startingTime
-                        
+                                
                     end
+
+
 
                     # Write the solution (if any)
                     if isOptimal
@@ -456,6 +470,4 @@ function solveDataSet()
         end
     end
 end
-
-
 
