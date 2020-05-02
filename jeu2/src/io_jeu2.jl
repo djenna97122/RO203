@@ -55,31 +55,32 @@ Display a grid represented by a 2-dimensional array
 function displayGrid(t::Array{Any, 2})
 
     n = size(t, 1)
+    blockSize = round.(Int, sqrt(n))
+    
+    # Display the upper border of the grid
+    println("|", "-"^n,"|")
     
     # For each cell (l, c)
     for l in 1:n
+        
         for c in 1:n
+            if c==1
+                print("|")
+            end
             if t[l,c]==0
                 print(" ")
             else
                 print(t[l,c])
             end
         end
-        println("")
+        println("|")
     end
+    #Display the lower border of the grid
+    println("|", "-"^n,"|")
+    
 end
 
 
- function DisplayIntermediate(edges::Array{VariableRef,4},t)
-     n = size(edges,1)
-     
-     
-    println(JuMP.value(edges[1,2,3,2]))
-    println(JuMP.value(edges[5,2,3,2]))
-
-    
-    
- end
 
 """
 Return a 2-dimensional array containing numbers for islands and "-","=","||","|" for bridges
@@ -90,7 +91,8 @@ Argument:
 function displayIntermediate(edges::Array{VariableRef,4},t::Array{Any,2})
 
     n = size(edges,1)
-    x=t
+    x=Array{Any,2}
+    x=copy(t)
     # For each cells (l, c) (i,j)
     for l in 1:n
         for c in 1:n
@@ -150,6 +152,72 @@ function displayIntermediate(edges::Array{VariableRef,4},t::Array{Any,2})
     end
 return(x)
 end
+
+
+function displayIntermediate_heur(edges::Array{Int64,4},t::Array{Any,2})
+
+    n = size(edges,1)
+    x=copy(t)
+    # For each cells (l, c) (i,j)
+    for l in 1:n
+        for c in 1:n
+            for i in 1:n
+                for j in 1:n
+                    #If they are connected with a bridge we build it
+                    if (edges[l,c,i,j])> 0
+                        if i==l
+                          if c<j
+                            k=c+1
+                            while k<j
+                                if ((edges[l,c,i,j])==1 && x[i,k]==0)
+                                    x[i,k]="-"
+                                elseif ((edges[l,c,i,j])==2  && x[i,k]==0)
+                                        x[i,k]="="
+                                end
+                                k+=1
+                            end
+                          else
+                            k=j+1
+                            while k<c
+                               if ((edges[l,c,i,j])==1 && x[i,k]==0)
+                                    x[i,k]="-"
+                                elseif ((edges[l,c,i,j])==2 && x[i,k]==0)
+                                        x[i,k]="="
+                                end
+                                k+=1
+                            end
+                          end
+                        elseif c==j
+                            if i<l
+                              k=i+1
+                              while k<l
+                                  if ((edges[l,c,i,j])==1  && x[k,j]==0)
+                                      x[k,j]="|"
+                                  elseif ((edges[l,c,i,j])==2 && x[k,j]==0)
+                                          x[k,j]="||"
+                                  end
+                                  k+=1
+                              end
+                            else
+                              k=l+1
+                              while k<i
+                                 if ((edges[l,c,i,j])==1  && x[i,k]==0)
+                                      x[k,j]="|"
+                                  elseif ((edges[l,c,i,j])==2 && x[i,k]==0)
+                                          x[k,j]="||"
+                                  end
+                                  k+=1
+                            end
+                        end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return(x)
+end
+
 """
 Display cplex solution
 Argument
@@ -164,12 +232,12 @@ function displaySolution(edges::Array{VariableRef,4},t::Array{Any,2})
     # For each cell (l, c)
     for l in 1:n
         for c in 1:n
-            if t[l,c]==0
+            if x[l,c]==0
                 print("  ")
-            elseif t[l,c]== "||"
-                print(t[l,c])
+            elseif x[l,c]== "||"
+                print(x[l,c])
             else
-                print(t[l,c]," ")
+                print(x[l,c]," ")
             end
         end
         println(" ")
@@ -192,24 +260,18 @@ function writeSolution(file::String,t::Array{Any, 2})
 
              for c in 1:n
                     if t[l,c]==0
-                        write(fout,"  ")
+                        write(fout," ")
                     elseif t[l,c]== "||"
                         write(fout,string(t[l,c]))
                     else
                         write(fout,string(t[l,c]) *" ")
                     end
              end
-                write(fout," ")
-                if l != n
-                    
-                end
-            write(fout, "\n ")
+        write(fout,"\n")
         end
         write(fout,"\n")
     end
 end
-    
-
 
 """
 Create a pdf file which contains a performance diagram associated to the results of the ../res folder
@@ -522,5 +584,3 @@ function resultsArray(outputFile::String)
     close(fout)
     
 end
-
-
