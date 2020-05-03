@@ -625,3 +625,4 @@ function resultsArray(outputFile::String)
     close(fout)
     
 end
+
