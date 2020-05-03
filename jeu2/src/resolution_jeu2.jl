@@ -124,104 +124,85 @@ function heuristicSolve(t)
      
     
          
-        #tableau des iles; une ile = tuple (i,j,val,nbAvailableCo)
-        islands=Array{Tuple{Int64,Int64,Any,Int64},1}()
-        
-        #tableau des arretes: nbre d'aretes entre (i,j) et à (k,l)
-        edges=Array{Int,4}
-        edges=zeros(Int,n,n,n,n)
-     
-        for i in 1:n
-            for j in 1:n
-                push!(islands,(i,j,t[i,j],t[i,j]))
-            end
+    #tableau des iles; une ile = tuple (i,j,val,nbAvailableCo)
+    islands=Array{Tuple{Int64,Int64,Any,Int64},1}()
+    
+    #tableau des arretes: nbre d'aretes entre (i,j) et à (k,l)
+    edges=Array{Int,4}
+    edges=zeros(Int,n,n,n,n)
+    
+    for i in 1:n
+        for j in 1:n
+            push!(islands,(i,j,t[i,j],t[i,j]))
         end
+    end
         
-        #Sorting islands by their values (small value= island with more constraint)
-       
-        sort!(islands, by = x -> x[3])
-     
-        #We save at index (i-1)*n+j the new index of island [i,j]
-        new_index=Array{Int,1}
-        new_index=zeros(Int,n*n)
-        h=1
-        for isl in islands
-            (l1,c1,v1,co1)=isl
-            new_index[(l1-1)*n+c1]=h
-            h+=1
+    #Sorting islands by their values (small value= island with more constraint)
+    
+    sort!(islands, by = x -> x[3])
+    
+    #We save at index (i-1)*n+j the new index of island [i,j]
+    new_index=Array{Int,1}
+    new_index=zeros(Int,n*n)
+    h=1
+    for isl in islands
+        (l1,c1,v1,co1)=isl
+        new_index[(l1-1)*n+c1]=h
+        h+=1
+    end
+    while !gridFilled && resolutionTime<30
+        #Go to the first islands because the first cases are empty cells
+        c=1
+        i=0
+        j=0
+        val=0
+        co=0
+        while val==0 && c<n*n
+            (i,j,val,co)=islands[c]
+            c+=1
         end
-        while !gridFilled && resolutionTime<30
-            #println("new attempt")
-            #Go to the first islands because the first cases are empty cells
-            c=1
-            i=0
-            j=0
-            val=0
-            co=0
-            while val==0 && c<n*n
-                (i,j,val,co)=islands[c]
-                c+=1
-            end
-            c-=1
+        c-=1
       
-         gridStillFeasible = true
+        gridStillFeasible = true
             
-            # While the grid is not filled and it may still be solvable
+        # While the grid is not filled and it may still be solvable
             while gridStillFeasible
 
-                (i,j,val,co)=islands[c]
-             
-                #print("nouveau sommet: ")
-                #println(c," ",i," ",j," ",val," ",co)
+            (i,j,val,co)=islands[c]
+            
+            #si un voisin n'est pas encore connecte:
+            if co>0
+            #We choose a random way of connecting islands to its neighbours
+            (neighbours,b)=ComputeNeighbours(i,j,t,islands,new_index)
                 
-                #si un voisin n'est pas encore connecte:
-                if co>0
-                    #We choose a random way of connecting islands to its neighbours
-                    (neighbours,b)=ComputeNeighbours(i,j,t,islands,new_index)
-                    
-                     #If an island still lacks connection and doesn't have enough neighbours available
-                    #println(neighbours)
-                    #print("nb co dispos chez les voisins= ")
-                    #println(b)
-                    if b<co
-                        gridStillFeasible = false
-                        #println("pas assez de voisin dispos")
-                    else
-                      
-                        #Number of neighbours examinated
-                        count=0
+            #If an island still lacks connection and doesn't have enough neighbours available
+            if b<co
+                gridStillFeasible = false
+            else
+                #Number of neighbours examinated
+                count=0
                 
-                        co2set=set_bridges(islands[c],neighbours)
-                        
-                       for count in 1:size(co2set,1)
-                       
-                            (k,l,v,nbCo)=neighbours[count]
-                            
-                            #print("on choisit de le connecter au voisin= ")
-                            #println(k,l,v,nbCo)
-                            
-                            #print("on lui met ")
-                            #print(co2set[count])
-                            #println("aretes ")
+                goon,co2set=set_bridges(islands[c],neighbours)
+                if goon
+                    for count in 1:size(co2set,1)
                            
-                            tuple1=Tuple{Int64,Int64,Any,Int64}[]
-                            tuple1= (k,l,v,nbCo-co2set[count])
-                            new_indv=new_index[(k-1)*n+l]
-                            islands[new_indv]=tuple1
-                            #print("le voisin est mtn: ")
-                            #println(islands[new_indv])
+                        (k,l,v,nbCo)=neighbours[count]
+                         
+                        tuple1=Tuple{Int64,Int64,Any,Int64}[]
+                        tuple1= (k,l,v,nbCo-co2set[count])
+                        new_indv=new_index[(k-1)*n+l]
+                        islands[new_indv]=tuple1
                             
-                            
-                            tuple2=Tuple{Int64,Int64,Any,Int64}[]
-                            tuple2=(i,j,val,co-co2set[count])
-                            islands[c]=tuple2
-                            #print("l'iles est mtn': ")
-                            #println(islands[c])
-                              (i,j,val,co)=islands[c]
-                            edges[i,j,k,l]=co2set[count]
-                            edges[k,l,i,j]=co2set[count]
+                        tuple2=Tuple{Int64,Int64,Any,Int64}[]
+                        tuple2=(i,j,val,co-co2set[count])
+                        islands[c]=tuple2
+                        (i,j,val,co)=islands[c]
+                        edges[i,j,k,l]=co2set[count]
+                        edges[k,l,i,j]=co2set[count]
                       end
-                 
+                 else
+                    gridStillFeasible==false
+                end
                               
                        
                     #Fin if b<co
@@ -230,7 +211,6 @@ function heuristicSolve(t)
                 end
                     if c==n*n && gridStillFeasible
                         gridFilled=true
-                        
                         return gridFilled,edges,time()-start
                         
                     elseif c<n*n
@@ -241,8 +221,8 @@ function heuristicSolve(t)
             end
             
         resolutionTime=time()-start
-        #print("time = ")
-        #println(resolutionTime)
+        print("time = ")
+        println(resolutionTime)
         #Fin while !gridFilled && resolutionTime<100
         end
          return false,edges,time
@@ -279,15 +259,11 @@ function ComputeNeighbours(i,j,t,islands,new_index)
        l_up-=2
        while l_up>1 && t[l_up,j]==0
            l_up-=1
-          # print("lup: ")
-          #println(l_up)
        end
        
        new_ind=new_index[(l_up-1)*n+j]
       
        if islands[new_ind][4]>0
-       #print("nb co dispo du voisin haut= ")
-        #     println(islands[new_ind][4])
         push!(res,islands[new_ind])
         s+=islands[new_ind][4]
        end
@@ -297,14 +273,10 @@ function ComputeNeighbours(i,j,t,islands,new_index)
        l_down+=2
        while l_down<n && t[l_down,j]==0
            l_down+=1
-       #     print("ldown: ")
-        #    println(l_down)
       end
        new_ind=new_index[(l_down-1)*n+j]
      
       if islands[new_ind][4]>0
-     #print("nb co dispo du voisin bas= ")
-     # println(islands[new_ind][4])
         push!(res,islands[new_ind])
          s+=islands[new_ind][4]
        end
@@ -314,15 +286,11 @@ function ComputeNeighbours(i,j,t,islands,new_index)
       c_left-=2
       while c_left>1 && t[i,c_left]==0
            c_left-=1
-      #     print("c_left: ")
-       #     println(c_left)
         end
             new_ind=new_index[(c_left-1)*n+j]
             
       new_ind=new_index[(i-1)*n+c_left]
       if islands[new_ind][4]>0
-      #print("nb co dispo du voisin gauche = ")
-       #println(islands[new_ind][4])
              push!(res,islands[new_ind])
                s+=islands[new_ind][4]
         end
@@ -331,15 +299,11 @@ function ComputeNeighbours(i,j,t,islands,new_index)
       c_right+=2
       while c_right<n && t[i,c_right]==0
         c_right+=1
-       # print("cright: ")
-      #  println(c_right)
       end
             new_ind=new_index[(c_right-1)*n+j]
             
       new_ind=new_index[(i-1)*n+c_right]
       if islands[new_ind][4]>0
-     # print("nb co dispo du voisin droite= ")
-    #   println(islands[new_ind][4])
            push!(res,islands[new_ind])
             s+=islands[new_ind][4]
       end
@@ -351,6 +315,15 @@ function set_bridges(sommet,neighbours)
    
     nb_vois=size(neighbours,1)
     found=false
+    s=0 #nombre de connections dispo autour de sommet
+    for k in 1:nb_vois
+        s+=min(2,neighbours[k][4])
+    end
+    if s<sommet[4]
+        return(false,[])
+    end
+   
+    
     while !found
     co2set=[]
     #numero du voisin qu'on traite
@@ -362,18 +335,16 @@ function set_bridges(sommet,neighbours)
         #While the island has neighbours available and not enough connections
             while set>0 && ind<nb_vois
                 ind+=1
-               
-               # print("on traite le voisin numero ")
-                #println(ind)
+                
                 #Set the number of connection to neighbour[ind]
-                maxco=min(set,neighbours[ind][4])
-                push!(co2set,min(rand(0:maxco),2))
-                set-=co2set[ind]
+                maxco=max(set,neighbours[ind][4])
+                nb=min(rand(0:maxco),2)
+                push!(co2set,nb)
+                set-=nb
             end
         if set==0
             found=true
-            # println("permutation trouvée")
-            return(co2set)
+            return(found, co2set)
         end
     end
     
@@ -423,7 +394,7 @@ function solveDataSet()
 
             # If the instance has not already been solved by this method
             if !isfile(outputFile)
-
+                println(outputFile)
 
                 resolutionTime = -1
                 isOptimal = false
@@ -450,7 +421,7 @@ function solveDataSet()
                     startingTime = time()
                             
                     # While the grid is not solved and less than 30 seconds are elapsed
-                    while !isOptimal && resolutionTime < 30
+                    while !isOptimal && resolutionTime < 100
                                         
                         print(".")
                         
@@ -488,4 +459,5 @@ function solveDataSet()
         end
     end
 end
+
 
