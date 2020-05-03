@@ -53,7 +53,7 @@ Display a grid represented by a 2-dimensional array
 """
 
 function displayGrid(t::Array{Any, 2})
-
+    println("debut")
     n = size(t, 1)
     blockSize = round.(Int, sqrt(n))
     
@@ -88,13 +88,13 @@ Argument:
 - t: array of size m*m with values in [0, n] representing initial grid
 - edges:
 """
-function displayIntermediate(edges::Array{VariableRef,4},t::Array{Any,2})
-
+function displayIntermediate(edges,t::Array{Any,2})
     n = size(edges,1)
     x=Array{Any,2}
     x=copy(t)
     # For each cells (l, c) (i,j)
     for l in 1:n
+  
         for c in 1:n
             for i in 1:n
                 for j in 1:n
@@ -106,6 +106,7 @@ function displayIntermediate(edges::Array{VariableRef,4},t::Array{Any,2})
                             while k<j
                                 if (JuMP.value(edges[l,c,i,j])==1 && x[i,k]==0)
                                     x[i,k]="-"
+                                    
                                 elseif (JuMP.value(edges[l,c,i,j])==2  && x[i,k]==0)
                                         x[i,k]="="
                                 end
@@ -133,11 +134,12 @@ function displayIntermediate(edges::Array{VariableRef,4},t::Array{Any,2})
                                   end
                                   k+=1
                               end
-                            else
+                            elseif i>l
                               k=l+1
                               while k<i
-                                 if (JuMP.value(edges[l,c,i,j])==1  && x[i,k]==0)
+                                 if (JuMP.value(edges[l,c,i,j])==1  && x[k,j]==0)
                                       x[k,j]="|"
+                                       
                                   elseif (JuMP.value(edges[l,c,i,j])==2 && x[i,k]==0)
                                           x[k,j]="||"
                                   end
@@ -153,8 +155,13 @@ function displayIntermediate(edges::Array{VariableRef,4},t::Array{Any,2})
 return(x)
 end
 
-
-function displayIntermediate_heur(edges::Array{Int64,4},t::Array{Any,2})
+"""
+Return a 2-dimensional array containing numbers for islands and "-","=","||","|" for bridges
+Argument:
+- t: array of size m*m with values in [0, n] representing initial grid
+- edges:
+"""
+function displayIntermediate_heur(edges,t::Array{Any,2})
 
     n = size(edges,1)
     x=copy(t)
@@ -225,7 +232,7 @@ Argument
 
 - Print the Solution grid
 """
-function displaySolution(edges::Array{VariableRef,4},t::Array{Any,2})
+function displaySolution(edges,t::Array{Any,2})
 
     n = size(t,1)
     x=displayIntermediate(edges,t)
@@ -243,7 +250,35 @@ function displaySolution(edges::Array{VariableRef,4},t::Array{Any,2})
         println(" ")
     end
 end
+
+
 """
+Display heuristic solution
+Argument
+- t: initial grid
+
+- Print the Solution grid
+"""
+function displaySolutionHeur(edges,t::Array{Any,2})
+
+    n = size(t,1)
+    x=displayIntermediate_heur(edges,t)
+    # For each cell (l, c)
+    for l in 1:n
+        for c in 1:n
+            if x[l,c]==0
+                print("  ")
+            elseif x[l,c]== "||"
+                print(x[l,c])
+            else
+                print(x[l,c]," ")
+            end
+        end
+        println(" ")
+    end
+end
+"""
+
 Write a solution in an output stream
 
 Arguments
@@ -269,12 +304,12 @@ function writeSolution(file::String,t::Array{Any, 2})
              end
             print(" ")
             endLine = "]"
-            if l != n
+          
                 endLine *= ";"
-            end
+           
             println(fout, endLine)
         end
-        println(fout, "]")
+        println(fout, "#]")
         print(fout,"\n")
     end
      
@@ -308,7 +343,7 @@ function performanceDiagram(outputFile::String)
     for file in readdir(resultFolder)
 
         path = resultFolder * file
-        
+     
         # If it is a subfolder
         if isdir(path)
             
@@ -339,23 +374,20 @@ function performanceDiagram(outputFile::String)
     for file in readdir(resultFolder)
             
         path = resultFolder * file
-    println(path)
-     println(isdir(path))
+    
         if isdir(path)
-
+println(path)
             folderCount += 1
             fileCount = 0
            
             # For each text file in the subfolder
             for resultFile in filter(x->occursin(".txt", x), readdir(path))
-                println("line 343")
                 fileCount += 1
                 include(path * "/" * resultFile)
               
                 if isOptimal
+                println(isOptimal)
                     results[folderCount, fileCount] = solveTime
-                    print("isopti= ")
-                    println(isOptimal)
                     if solveTime > maxSolveTime
                         maxSolveTime = solveTime
                     end
@@ -363,7 +395,7 @@ function performanceDiagram(outputFile::String)
             end
         end
     end
-        println(results)
+        
     # Sort each row increasingly
     results = sort(results, dims=2)
 
@@ -396,7 +428,6 @@ function performanceDiagram(outputFile::String)
                 currentId += 1
                 identicalValues += 1
             end
-            print("line 392")
     
             # Add the proper points
             append!(x, previousX)
@@ -414,14 +445,13 @@ function performanceDiagram(outputFile::String)
 
         append!(x, maxSolveTime)
         append!(y, currentId - 1)
-println(x)
-println(dim)
+
         # If it is the first subfolder
         if dim == 1
-        
+        println(dim)
             # Draw a new plot
             plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
-
+println("plot")
         # Otherwise
         else
             # Add the new curve to the created plot
