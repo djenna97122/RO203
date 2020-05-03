@@ -67,18 +67,30 @@ function cplexSolve(t::Array{Any, 2})
     
     for i in 1:n
         for c1 in 1:n
-            for c2 in 1:n
-                for j in c1:c2
+            
+            for c2 in 1:c1
+                for j in c2:c1
                     for l1 in 1:i
                         for l2 in i:n
-                            @constraint(m,edges[l1,j,l2,j]==0  edges[i,c1,i,c2])
+                            @constraint(m,edges[l1,j,l2,j]*edges[i,c1,i,c2]==0 )
                         end
                     end
                 end
             end
+            
+            for c2 in c1:n
+                for j in c1:c2
+                    for l1 in 1:i
+                        for l2 in i:n
+                            @constraint(m,edges[l1,j,l2,j]*edges[i,c1,i,c2]==0 )
+                        end
+                    end
+                end
+            end
+            
         end
     end
-    """
+"""
 
     # Start a chronometer
     start = time()
@@ -110,8 +122,7 @@ function heuristicSolve(t)
     tCopy =Array{Int,2}
     tCopy=zeros(Int,n,n)
      
-     while !gridFilled && resolutionTime<30
-          println("new attempt")
+    
          
         #tableau des iles; une ile = tuple (i,j,val,nbAvailableCo)
         islands=Array{Tuple{Int64,Int64,Any,Int64},1}()
@@ -139,7 +150,8 @@ function heuristicSolve(t)
             new_index[(l1-1)*n+c1]=h
             h+=1
         end
-        
+        while !gridFilled && resolutionTime<30
+            #println("new attempt")
             #Go to the first islands because the first cases are empty cells
             c=1
             i=0
@@ -159,8 +171,8 @@ function heuristicSolve(t)
 
                 (i,j,val,co)=islands[c]
              
-                print("nouveau sommet: ")
-                println(c," ",i," ",j," ",val," ",co)
+                #print("nouveau sommet: ")
+                #println(c," ",i," ",j," ",val," ",co)
                 
                 #si un voisin n'est pas encore connecte:
                 if co>0
@@ -168,10 +180,12 @@ function heuristicSolve(t)
                     (neighbours,b)=ComputeNeighbours(i,j,t,islands,new_index)
                     
                      #If an island still lacks connection and doesn't have enough neighbours available
-                    
+                    #println(neighbours)
+                    #print("nb co dispos chez les voisins= ")
+                    #println(b)
                     if b<co
                         gridStillFeasible = false
-                        println("pas assez de voisin dispos")
+                        #println("pas assez de voisin dispos")
                     else
                       
                         #Number of neighbours examinated
@@ -183,26 +197,26 @@ function heuristicSolve(t)
                        
                             (k,l,v,nbCo)=neighbours[count]
                             
-                            print("on choisit de le connecter au voisin= ")
-                            println(k,l,v,nbCo)
+                            #print("on choisit de le connecter au voisin= ")
+                            #println(k,l,v,nbCo)
                             
-                            print("on lui met ")
-                            print(co2set[count])
-                            println("aretes ")
+                            #print("on lui met ")
+                            #print(co2set[count])
+                            #println("aretes ")
                            
                             tuple1=Tuple{Int64,Int64,Any,Int64}[]
                             tuple1= (k,l,v,nbCo-co2set[count])
                             new_indv=new_index[(k-1)*n+l]
                             islands[new_indv]=tuple1
-                            print("le voisin est mtn: ")
-                            println(islands[new_indv])
+                            #print("le voisin est mtn: ")
+                            #println(islands[new_indv])
                             
                             
                             tuple2=Tuple{Int64,Int64,Any,Int64}[]
                             tuple2=(i,j,val,co-co2set[count])
                             islands[c]=tuple2
-                            print("l'iles est mtn': ")
-                            println(islands[c])
+                            #print("l'iles est mtn': ")
+                            #println(islands[c])
                               (i,j,val,co)=islands[c]
                             edges[i,j,k,l]=co2set[count]
                             edges[k,l,i,j]=co2set[count]
@@ -227,9 +241,11 @@ function heuristicSolve(t)
             end
             
         resolutionTime=time()-start
-        #Fin while !gridFilled
-        return false,edges,time
+        #print("time = ")
+        #println(resolutionTime)
+        #Fin while !gridFilled && resolutionTime<100
         end
+         return false,edges,time
 end
 
 function affiche(tab)
@@ -377,7 +393,7 @@ function solveDataSet()
 
 
     # Array which contains the name of the resolution methods
-    #resolutionMethod = ["cplex"]
+   # resolutionMethod = ["cplex"]
     resolutionMethod = ["cplex", "heuristique"]
 
     # Array which contains the result folder of each resolution method
@@ -436,7 +452,8 @@ function solveDataSet()
                     # While the grid is not solved and less than 30 seconds are elapsed
                     while !isOptimal && resolutionTime < 30
                                         
-                                        
+                        print(".")
+                        
                         # Solve it and get the results
                         isOptimal, edges, resolutionTime = heuristicSolve(t)
                         println(isOptimal)
@@ -445,11 +462,12 @@ function solveDataSet()
                                 
                     end
 
-
+                         println("")
 
                     # Write the solution (if any)
                     if isOptimal
-
+                        solution= displayIntermediate_heur(edges,t)
+                        print(solution)
                         writeSolution(outputFile,solution)
                         
                     end
