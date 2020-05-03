@@ -10,7 +10,7 @@ Generate an n*n grid with a given density
 Argument
 - n: size of the grid
 - density: percentage in [0, 1] of initial values in the grid
-
+"""
 function generateInstance(n::Int64, density::Float64)
 
    # True if the current grid has no conflicts
@@ -19,7 +19,7 @@ function generateInstance(n::Int64, density::Float64)
     
    # While a valid grid is not obtained we initialize a new grid
     while !isGridValid
-        println("new attempt")
+       
        t = zeros(Int, n, n)
        isGridValid = true
        
@@ -48,7 +48,7 @@ function generateInstance(n::Int64, density::Float64)
         
             #While the cell is not valid and while all the cells have not been considered
              while !(isCellFree&& isValueValid) && testedCells < n*n
-                println("test cell, val valide")
+                
                 if !isCellFree  || attemptCount == n
                     # Go to the next cell
                     if j < n
@@ -64,8 +64,7 @@ function generateInstance(n::Int64, density::Float64)
                     end
                     
                     testedCells += 1
-                    print("tested cells= ")
-                    println(testedCells)
+                    
                     isCellFree = t[i, j] == 0
                     isValueValid = isValid(t,i, j,val)
                     attemptCount = 0
@@ -74,27 +73,24 @@ function generateInstance(n::Int64, density::Float64)
                     attemptCount += 1
 
                 end
-                println("fin test cell, val valide")
+                
             #Fin while !isCellFree && testedCells < n*n
             end
-            print("cellule a remplir= ")
-            println(i, j, val)
+           
             if testedCells == n*n
                isGridValid = false
                println("toutes cellules testees")
             else
                 t[i,j]=val
-                t=set_void(i,j,t)
+                (t,add)=set_void(i,j,t)
+                cells+=add
                 Atraiter=[(i,j,val)]
                 while Atraiter!=[] && isGridValid
                 
                     (l,c,v)=popfirst!(Atraiter)
-                    print(" voisin a traiter= ")
-                    println(l, c, v )
-                    
                     cells+=1
                     
-                    (b,l1,c1,val1,l2,c2,val2)=set_neighbours(l,c,v,n,t)
+                    (b,l1,c1,val1,l2,c2,val2)=set_neighbours(l,c,v,t)
         
                     #If setneighbours hasn't found available cells for the neighbours of cells, the grid is not valid
                     if !b
@@ -105,17 +101,16 @@ function generateInstance(n::Int64, density::Float64)
                         push!(Atraiter,(l2,c,val2))
                         t[l,c1]=val1
                         t[l2,c]=val2
-                        print("voisin 1= ")
-                        println((l,c1,val1))
-                        print("voisin 2= ")
-                        println((l2,c,val2))
+                
                        #Our program impose cells to be one box away at list
                          
                        if val1>0
-                        t=set_void(l,c1,t)
+                        (t,add)=set_void(l,c1,t)
+                        cells+=add
                     end
                     if val2>0
-                       t=set_void(l2,c,t)
+                       (t,add)=set_void(l2,c,t)
+                       cells+=add
                     end
                         
                       #We set cells between (l,c) and its neighbours as unavailable
@@ -147,7 +142,7 @@ function generateInstance(n::Int64, density::Float64)
                         end
                     #Fin if !b
                     end
-                    println(t)
+                  
                 #Fin while Atraiter!=[]
                 end
             #Fin if tested cells=n*n
@@ -166,11 +161,12 @@ function isValid(t,i,j,v)
     end
     return valid
 end
-
+"""
+Compute the potential neighbours of an island
 return a tuple with
 - a boolean res: true if we have succeed to generate neighbours for the island (l,c)
 - coordinates of neighbours and their value. First is on the same line, second one on the same column
-
+"""
 function potential_neighbours(i,j,t)
     l_up=i
     l_down=i
@@ -195,7 +191,8 @@ function potential_neighbours(i,j,t)
           while l_down<n && t[l_down,j]==0
               l_down+=1
           end
-          if  t[l_down,j]==-1 || (l_down==1 && t[l_up,j]!=0#no neighbours possible on the downside otherwise bridges will cross
+          
+          if  t[l_down,j]==-1 || (l_down==1 && t[l_up,j]!=0)
             l_down=0
           end
       end
@@ -222,8 +219,12 @@ function potential_neighbours(i,j,t)
 return (l_up,l_down,c_left,c_right)
 end
 
-
+"""
+Modify the grid t so islands are at least on cell away
+return: grid t modified
+"""
 function set_void(l,c,t)
+    cells=0
     if l>1
         if t[l-1,c]==0
             t[l-1,c]=-1
@@ -242,44 +243,27 @@ function set_void(l,c,t)
             cells+=1
         end
     end
-    if c1<n
+    if c<n
         if t[l,c+1]==0
             t[l,c+1]=-1
             cells+=1
         end
     end
-
+return(t,cells)
 end
 
+"""
+Compute the random values and positions for the neighbours of island(l,c,v)
+"""
 function set_neighbours(l,c,v,t)
-     #Choose directions for the neighbours
-     dhor=rand(1:2)
-     dvert=rand(1:2)
-     n=size(t,1)
-     
-     if dhor==1 #left neighbour
-        c1=rand(c_left-2:c+2)
-    else
-         c1=rand(c:c+2)
-    end
-    
+    c1=ceil.(Int, n * rand())
     l2=ceil.(Int, n * rand())
-    
-    print("c1= ")
-    println(c1)
-        print("l2 ")
-        println(l2)
-        
     res=true
     attemptCount=0
     while t[l,c1]!=0 && attemptCount<(n-1)
-   
-        print("c1 ")
-        println(c1)
-        print("t[l,c1] = ")
-        println(t[l,c1])
-        
-        c1=rem(c1,n)+1
+        if c1<n
+            c1=rem(c1,n)+1
+        end
         attemptCount+=1
     end
     
@@ -289,94 +273,43 @@ function set_neighbours(l,c,v,t)
     
     attemptCount=0
     while t[l2,c]!=0 && attemptCount<2(n-1)
-     
-        print("l2 ")
-        println(l2)
-        print("t[l2,c]= ")
-        println(t[l2,c])
-        
-        l2=rem(l2,n)+1
+        if l2<n
+            l2=rem(l2,n)+1
+        end
         attemptCount+=1
     end
-    if (attemptCount==(n-1) && t[l2,c]!=0)
+   if (attemptCount==(n-1) && t[l2,c]!=0)
         res=false
     end
-
+    
     val1=0
-        val2=0
-        while val1+val2 <v
-            if (l,c1)==(1,1) || (l,c1)==(1,5) ||(l,c1)==(5,1) ||(l,c1)==(5,5)
-                val1=floor.(Int, 5 * rand())
-            end
-            
-            if (l2,c)==(1,1) || (l2,c)==(1,5) ||(l2,c)==(5,1) ||(l2,c)==(5,5)
-                val1=floor.(Int, 5 * rand())
-            end
-            val1=floor.(Int, 7 * rand())
-            val2=floor.(Int, 7 * rand())
-                        print("val1= ")
-            println(val1)
-            print("val2= ")
-            println(val2)
-            
-            CALCULER VALIDITER NEIGHBOURS
-         
+    val2=0
+    while val1+val2 <v
+        if (l,c1)==(1,1) || (l,c1)==(1,5) ||(l,c1)==(5,1) ||(l,c1)==(5,5)
+            val1=floor.(Int, 5 * rand())
         end
-    return(res,l,c1,val1,l2,c,val2)
+        
+        if (l2,c)==(1,1) || (l2,c)==(1,5) ||(l2,c)==(5,1) ||(l2,c)==(5,5)
+            val1=floor.(Int, 5 * rand())
+        end
+        val1=floor.(Int, 7 * rand())
+        val2=floor.(Int, 7 * rand())
+       
+    end
+return(res,l,c1,val1,l2,c,val2)
 end
 
+"""
 
 return the limits to set neighbours for (i,j) in t in each direction if limit=0 it means no neighbours can be set
-
-
-function gets_space(i::Int,j::Int,val::Int,t::Array{Int,2})
-    n=size(t,1)
-    space=true
-    if t[i,j]>0
-        space=false
-    end
-    if i>1
-        if t[i-1,j]>0
-            space=false
-        end
-    end
-    if i<n
-         if t[i+1,j]>0
-            space=false
-        end
-    end
-    if j>1
-        if t[i,j-1]>0
-            space=false
-        end
-    end
-    if j<n
-        if t[i,j+1]>0
-            space=false
-        end
-    end
-    nb_edges=0
-    if i==1 || i==n
-        nb_edges+=1
-    end
-    if j==1 || j==n
-        nb_edges+=1
-    end
-    nb_voisin_max=0
-    if val==5 || val==6
-        nb_voisin_max=1
-    end
-    if val==3 || val==4
-        nb_voisin_max=2
-    end
-    if val==1 || val==2
-        nb_voisin_max=3
-    end
-    if nb_edges>nb_voisin_max
-        space=false
-    end
-    return space
+"""
+function set_limits(i,j,t)
 end
+
+
+"""
+Compute the number of connection an island can set to its neighbours
+"""
 function nbco_neighbours(i::Int64,j::Int64,val::Int64,t::Array{Int,2})
     l_up=i
     l_down=i
@@ -422,17 +355,29 @@ function nbco_neighbours(i::Int64,j::Int64,val::Int64,t::Array{Int,2})
    return res
 end
 
-
+"""
 Generate all the instances
 
 Remark: a grid is generated only if the corresponding output file does not already exist
-
-function generateDataSet()
-
-    # TODO
-    println("In file generation.jl, in method generateDataSet(), TODO: generate an instance")
-    
-end
 """
+
+
+   function generateDataSet()
+       # For each grid size considered
+        for size in [7, 10, 15, 20,50]
+           for instance in 1:10
+
+               fileName = "/Users/djennaedom/Documents/ENSTA/2A/RO203/Bloc 2/Projet_RO203/jeu1/data/instance_t" * string(size) * "_" * string(instance) * ".txt"
+
+               if !isfile(fileName)
+                   println("-- Generating file " * fileName)
+                   saveInstance(generateInstance(size), fileName)
+               end
+           end
+       end
+   end
+
+
+
 
 
